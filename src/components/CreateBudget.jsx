@@ -26,6 +26,8 @@ export function CreateBudget({ onCreate, onCancel }) {
   const [includeSavings, setIncludeSavings] = useState(false)
   const [recurrent, setRecurrent] = useState(false)
   const [recurrence, setRecurrence] = useState('monthly')
+  const [customDays, setCustomDays] = useState(30)
+  const [customStart, setCustomStart] = useState(() => new Date().toISOString().slice(0, 10))
 
   // Step 4
   const [items, setItems] = useState({
@@ -82,6 +84,8 @@ export function CreateBudget({ onCreate, onCancel }) {
       themeId,
       recurrent: budgetType === 'daily' ? recurrent : false,
       recurrence: budgetType === 'daily' && recurrent ? recurrence : null,
+      recurrenceDays: budgetType === 'daily' && recurrent && recurrence === 'custom' ? Math.max(1, customDays) : null,
+      recurrenceStart: budgetType === 'daily' && recurrent && recurrence === 'custom' ? customStart : null,
       sections: {
         income:   { enabled: includeIncome,                    items: includeIncome  ? filterItems(items.income)   : [] },
         bills:    { enabled: !isProject,                       items: !isProject     ? filterItems(items.bills)    : [] },
@@ -124,6 +128,8 @@ export function CreateBudget({ onCreate, onCancel }) {
             includeSavings={includeSavings} setIncludeSavings={setIncludeSavings}
             recurrent={recurrent} setRecurrent={setRecurrent}
             recurrence={recurrence} setRecurrence={setRecurrence}
+            customDays={customDays} setCustomDays={setCustomDays}
+            customStart={customStart} setCustomStart={setCustomStart}
             onNext={handleNext}
           />
         )}
@@ -280,10 +286,11 @@ const RECURRENCE_OPTIONS = [
   { value: 'monthly',   label: 'Monthly' },
   { value: 'quarterly', label: 'Quarterly' },
   { value: 'yearly',    label: 'Yearly' },
+  { value: 'custom',    label: 'Custom' },
 ]
 
 // ── Step 3: Sections ────────────────────────────────────────────────
-function StepSections({ isProject, includeIncome, setIncludeIncome, includeSavings, setIncludeSavings, recurrent, setRecurrent, recurrence, setRecurrence, onNext }) {
+function StepSections({ isProject, includeIncome, setIncludeIncome, includeSavings, setIncludeSavings, recurrent, setRecurrent, recurrence, setRecurrence, customDays, setCustomDays, customStart, setCustomStart, onNext }) {
   return (
     <div className="step-content">
       <div className="step-intro">
@@ -359,6 +366,30 @@ function StepSections({ isProject, includeIncome, setIncludeIncome, includeSavin
                       {opt.label}
                     </button>
                   ))}
+                  {recurrence === 'custom' && (
+                    <div className="recurrence-custom-fields">
+                      <div className="recurrence-custom-days">
+                        <span className="recurrence-custom-label">Every</span>
+                        <input
+                          className="recurrence-custom-input"
+                          type="number"
+                          min="1"
+                          value={customDays}
+                          onChange={e => setCustomDays(Math.max(1, parseInt(e.target.value) || 1))}
+                        />
+                        <span className="recurrence-custom-label">days</span>
+                      </div>
+                      <div className="recurrence-custom-days">
+                        <span className="recurrence-custom-label">Starting</span>
+                        <input
+                          className="recurrence-custom-input recurrence-custom-input--date"
+                          type="date"
+                          value={customStart}
+                          onChange={e => setCustomStart(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

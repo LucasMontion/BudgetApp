@@ -17,7 +17,7 @@ function fmtMoney(n) {
 }
 
 // ── Period helpers ────────────────────────────────────────────────────
-function getPeriodBounds(recurrence, offset) {
+function getPeriodBounds(recurrence, offset, opts = {}) {
   const now = new Date()
 
   if (recurrence === 'weekly') {
@@ -73,11 +73,29 @@ function getPeriodBounds(recurrence, offset) {
     return { start, end }
   }
 
+  if (recurrence === 'custom') {
+    const days = opts.customDays || 30
+    const anchor = opts.createdAt ? new Date(opts.createdAt) : new Date(2024, 0, 1)
+    anchor.setHours(0, 0, 0, 0)
+    const today = new Date(now)
+    today.setHours(0, 0, 0, 0)
+    const elapsed = Math.floor((today - anchor) / (24 * 3600 * 1000))
+    const currentPeriod = Math.floor(elapsed / days)
+    const targetPeriod = currentPeriod + offset
+    const start = new Date(anchor)
+    start.setDate(anchor.getDate() + targetPeriod * days)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(start)
+    end.setDate(start.getDate() + days - 1)
+    end.setHours(23, 59, 59, 999)
+    return { start, end }
+  }
+
   return null
 }
 
-function getPeriodLabel(recurrence, offset) {
-  const bounds = getPeriodBounds(recurrence, offset)
+function getPeriodLabel(recurrence, offset, opts = {}) {
+  const bounds = getPeriodBounds(recurrence, offset, opts)
   if (!bounds) return ''
   const { start, end } = bounds
   const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -85,6 +103,7 @@ function getPeriodLabel(recurrence, offset) {
   switch (recurrence) {
     case 'weekly':
     case 'biweekly':
+    case 'custom':
       return `${fmt(start)} – ${fmt(end)}`
     case 'monthly':
       return start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -108,9 +127,11 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
   const isRecurrent  = budget.recurrent && budget.recurrence && !isProject
 
   // Filter transactions to the selected period when recurrent
+  const periodOpts = { customDays: budget.recurrenceDays, createdAt: budget.recurrenceStart || budget.createdAt }
+
   const transactions = isRecurrent
     ? (() => {
-        const { start, end } = getPeriodBounds(budget.recurrence, periodOffset)
+        const { start, end } = getPeriodBounds(budget.recurrence, periodOffset, periodOpts)
         return allTxns.filter(t => { const d = new Date(t.date); return d >= start && d <= end })
       })()
     : allTxns
@@ -158,7 +179,7 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <span className="period-nav__label">{getPeriodLabel(budget.recurrence, periodOffset)}</span>
+          <span className="period-nav__label">{getPeriodLabel(budget.recurrence, periodOffset, periodOpts)}</span>
           <button
             className="period-nav__arrow"
             onClick={() => setPeriodOffset(o => o + 1)}

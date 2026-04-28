@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const SECTION_COLORS = {
   income:   '#10B981',
   bills:    '#EF4444',
@@ -5,14 +7,145 @@ const SECTION_COLORS = {
   savings:  '#8B5CF6',
 }
 
-export function TransactionList({ budget, sectionKey, sectionLabel, subcategoryName, onBack, onAddTransaction }) {
+function EditSheet({ txn, budget, sectionKey, color, onSave, onDelete, onClose }) {
+  const [digits, setDigits] = useState(String(parseFloat(txn.amount)))
+  const [memo, setMemo] = useState(txn.memo || '')
+  const [dateStr, setDateStr] = useState(new Date(txn.date).toISOString().slice(0, 10))
+  const [selectedSub, setSelectedSub] = useState(txn.subcategoryName)
+  const [pendingDelete, setPendingDelete] = useState(false)
+
+  const sectionItems = budget.sections?.[sectionKey]?.items?.filter(i => i.name.trim()) || []
+
+  function handleAmountChange(e) {
+    let v = e.target.value.replace(/[^0-9.]/g, '')
+    const parts = v.split('.')
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
+    if (parts[1] && parts[1].length > 2) v = parts[0] + '.' + parts[1].slice(0, 2)
+    if (v.replace('.', '').length > 8) return
+    setDigits(v)
+  }
+
+  function handleSave() {
+    const amount = parseFloat(digits)
+    if (!amount || amount <= 0 || !selectedSub) return
+    onSave({ amount, memo: memo.trim(), date: new Date(dateStr + 'T12:00:00').toISOString(), subcategoryName: selectedSub })
+  }
+
+  const canSave = parseFloat(digits) > 0 && !!selectedSub
+
+  return (
+    <>
+      <div className="sheet-backdrop" onClick={onClose} />
+      <div className="edit-txn-sheet">
+        <div className="edit-txn-sheet__handle" />
+
+        <div className="edit-txn-sheet__header">
+          <p className="edit-txn-sheet__title">Edit Transaction</p>
+          <button className="edit-txn-sheet__close" onClick={onClose} aria-label="Close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="edit-txn-sheet__amount-row">
+          <span className="edit-txn-sheet__currency" style={{ color }}>$</span>
+          <input
+            className="edit-txn-sheet__amount-input"
+            type="text"
+            inputMode="decimal"
+            value={digits}
+            onChange={handleAmountChange}
+            style={{ color }}
+          />
+        </div>
+
+        {sectionItems.length > 0 && (
+          <div className="edit-txn-sheet__field">
+            <p className="edit-txn-sheet__label">Sub-category</p>
+            <div className="edit-txn-sheet__chips">
+              {sectionItems.map(item => (
+                <button
+                  key={item.id}
+                  className={`atxn-chip${selectedSub === item.name ? ' atxn-chip--active' : ''}`}
+                  style={{ '--chip-color': color }}
+                  onClick={() => setSelectedSub(item.name)}
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="edit-txn-sheet__field">
+          <p className="edit-txn-sheet__label">Memo</p>
+          <input
+            className="edit-txn-sheet__input"
+            type="text"
+            placeholder="Add a memo…"
+            value={memo}
+            onChange={e => setMemo(e.target.value)}
+          />
+        </div>
+
+        <div className="edit-txn-sheet__field">
+          <p className="edit-txn-sheet__label">Date</p>
+          <input
+            className="edit-txn-sheet__input"
+            type="date"
+            value={dateStr}
+            onChange={e => setDateStr(e.target.value)}
+          />
+        </div>
+
+        <div className="edit-txn-sheet__actions">
+          {pendingDelete ? (
+            <>
+              <button className="edit-txn-sheet__btn-cancel" onClick={() => setPendingDelete(false)}>Cancel</button>
+              <button className="edit-txn-sheet__btn-confirm-delete" onClick={onDelete}>Delete</button>
+            </>
+          ) : (
+            <>
+              <button className="edit-txn-sheet__btn-delete" onClick={() => setPendingDelete(true)}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4h6v2" />
+                </svg>
+                Delete
+              </button>
+              <button className="edit-txn-sheet__btn-save" style={{ background: canSave ? color : undefined }} onClick={handleSave} disabled={!canSave}>
+                Save
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
+export function TransactionList({ budget, sectionKey, sectionLabel, subcategoryName, onBack, onAddTransaction, onUpdateTransaction, onDeleteTransaction }) {
+  const [editingTxn, setEditingTxn] = useState(null)
+
   const transactions = (budget.transactions || [])
     .filter(t => t.sectionKey === sectionKey && (!subcategoryName || t.subcategoryName === subcategoryName))
     .sort((a, b) => new Date(b.date) - new Date(a.date))
 
   const title = subcategoryName ?? sectionLabel
-
   const color = SECTION_COLORS[sectionKey] ?? '#6366f1'
+
+  function handleSave(updates) {
+    onUpdateTransaction(editingTxn.id, updates)
+    setEditingTxn(null)
+  }
+
+  function handleDelete() {
+    onDeleteTransaction(editingTxn.id)
+    setEditingTxn(null)
+  }
 
   return (
     <div className="screen">
@@ -42,7 +175,7 @@ export function TransactionList({ budget, sectionKey, sectionLabel, subcategoryN
           </div>
         ) : (
           transactions.map(txn => (
-            <div key={txn.id} className="txn-row">
+            <button key={txn.id} className="txn-row txn-row--tappable" onClick={() => setEditingTxn(txn)}>
               <div className="txn-row__dot" style={{ background: color }} />
               <div className="txn-row__info">
                 <p className="txn-row__name">{txn.subcategoryName}</p>
@@ -54,7 +187,7 @@ export function TransactionList({ budget, sectionKey, sectionLabel, subcategoryN
               <span className="txn-row__amount" style={{ color }}>
                 ${parseFloat(txn.amount).toFixed(2)}
               </span>
-            </div>
+            </button>
           ))
         )}
       </div>
@@ -64,6 +197,18 @@ export function TransactionList({ budget, sectionKey, sectionLabel, subcategoryN
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>
       </button>
+
+      {editingTxn && (
+        <EditSheet
+          txn={editingTxn}
+          budget={budget}
+          sectionKey={sectionKey}
+          color={color}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          onClose={() => setEditingTxn(null)}
+        />
+      )}
     </div>
   )
 }

@@ -32,6 +32,8 @@
   --neutral-100: #2A2D3E;
   --neutral-200: #353849;
   --neutral-900: #F9FAFB;
+  --input-bg: #23263A;
+  --input-bg-focus: #2A2D3E;
 }
 
 /* ── Dark mode element overrides ── */
@@ -888,6 +890,211 @@ body {
 [data-theme="dark"] .recurrence-pill--active {
   background: rgba(59,130,246,.2);
 }
+.recurrence-custom-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+  width: 100%;
+}
+.recurrence-custom-days {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recurrence-custom-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.recurrence-custom-input {
+  width: 72px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.recurrence-custom-input::-webkit-outer-spin-button,
+.recurrence-custom-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.recurrence-custom-input:focus {
+  outline: none;
+  border-color: #3B82F6;
+}
+.recurrence-custom-input--date {
+  width: auto;
+  text-align: left;
+}
+
+/* ── Transaction edit sheet ── */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 150;
+}
+.edit-txn-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 20px 32px;
+  z-index: 151;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.edit-txn-sheet__handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 0 auto 4px;
+}
+.edit-txn-sheet__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.edit-txn-sheet__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.edit-txn-sheet__close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--neutral-100);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.edit-txn-sheet__amount-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  border-bottom: 1.5px solid var(--border);
+  padding-bottom: 12px;
+}
+.edit-txn-sheet__currency {
+  font-size: 28px;
+  font-weight: 700;
+}
+.edit-txn-sheet__amount-input {
+  flex: 1;
+  font-size: 36px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: inherit;
+  min-width: 0;
+  font-family: inherit;
+}
+.edit-txn-sheet__label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.edit-txn-sheet__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.edit-txn-sheet__input {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--input-bg, #F9FAFB);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s;
+}
+.edit-txn-sheet__input:focus { border-color: #6366F1; }
+.edit-txn-sheet__actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 2px;
+}
+.edit-txn-sheet__btn-delete {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 13px 18px;
+  border-radius: 10px;
+  border: 1.5px solid #F43F5E;
+  background: transparent;
+  color: #F43F5E;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.edit-txn-sheet__btn-save {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  border: none;
+  background: var(--neutral-200);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity .15s;
+}
+.edit-txn-sheet__btn-save:disabled { opacity: .35; cursor: default; }
+.edit-txn-sheet__btn-cancel {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.edit-txn-sheet__btn-confirm-delete {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  border: none;
+  background: #F43F5E;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.txn-row--tappable {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.txn-row--tappable:active { background: var(--neutral-50); }
 
 /* ── Overview screen ── */
 .overview-screen {
@@ -1943,7 +2150,7 @@ body {
   padding: 11px 12px;
   border-radius: 8px;
   border: 1.5px solid var(--border);
-  background: #F9FAFB;
+  background: var(--input-bg, #F9FAFB);
   font-size: 14px;
   color: var(--text);
   outline: none;
@@ -1952,7 +2159,7 @@ body {
 }
 .catdetail__input:focus {
   border-color: #34C759;
-  background: white;
+  background: var(--input-bg-focus, white);
   box-shadow: 0 0 0 3px rgba(99,102,241,.1);
 }
 .catdetail__input--err { border-color: #F43F5E; }
@@ -1962,7 +2169,7 @@ body {
   align-items: center;
   border: 1.5px solid var(--border);
   border-radius: 8px;
-  background: #F9FAFB;
+  background: var(--input-bg, #F9FAFB);
   width: 110px;
   flex-shrink: 0;
   overflow: hidden;
@@ -1970,7 +2177,7 @@ body {
 }
 .catdetail__amount-wrap:focus-within {
   border-color: #34C759;
-  background: white;
+  background: var(--input-bg-focus, white);
 }
 
 .catdetail__currency {

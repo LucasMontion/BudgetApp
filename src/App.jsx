@@ -22,7 +22,7 @@ export default function App() {
     localStorage.setItem('theme', darkMode ? 'dark' : 'light')
   }, [darkMode])
 
-  const { budgets, createBudget, deleteBudget, addTransaction, addBudgetItem } = useBudgets()
+  const { budgets, createBudget, deleteBudget, addTransaction, updateTransaction, deleteTransaction, addBudgetItem } = useBudgets()
   const activeBudget = budgets.find(b => b.id === activeBudgetId) ?? null
 
   function handleCreate(budgetData) {
@@ -108,6 +108,8 @@ export default function App() {
           subcategoryName={activeSubcategory}
           onBack={() => setScreen('category')}
           onAddTransaction={() => openAddTxn(activeSection.key)}
+          onUpdateTransaction={(txnId, updates) => updateTransaction(activeBudgetId, txnId, updates)}
+          onDeleteTransaction={(txnId) => deleteTransaction(activeBudgetId, txnId)}
         />
       )}
 

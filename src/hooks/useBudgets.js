@@ -21,7 +21,7 @@ export function useBudgets() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
   }, [budgets])
 
-  function createBudget({ type, name, themeId, sections, recurrent, recurrence }) {
+  function createBudget({ type, name, themeId, sections, recurrent, recurrence, recurrenceDays, recurrenceStart }) {
     const budget = {
       id: createId(),
       type: type ?? 'daily',
@@ -30,6 +30,8 @@ export function useBudgets() {
       sections,
       recurrent: recurrent ?? false,
       recurrence: recurrence ?? null,
+      recurrenceDays: recurrenceDays ?? null,
+      recurrenceStart: recurrenceStart ?? null,
       createdAt: new Date().toISOString(),
     }
     setBudgets(prev => [budget, ...prev])
@@ -38,6 +40,26 @@ export function useBudgets() {
 
   function deleteBudget(id) {
     setBudgets(prev => prev.filter(b => b.id !== id))
+  }
+
+  function updateTransaction(budgetId, txnId, updates) {
+    setBudgets(prev => prev.map(b =>
+      b.id !== budgetId ? b : {
+        ...b,
+        transactions: (b.transactions || []).map(t =>
+          t.id === txnId ? { ...t, ...updates } : t
+        ),
+      }
+    ))
+  }
+
+  function deleteTransaction(budgetId, txnId) {
+    setBudgets(prev => prev.map(b =>
+      b.id !== budgetId ? b : {
+        ...b,
+        transactions: (b.transactions || []).filter(t => t.id !== txnId),
+      }
+    ))
   }
 
   function addTransaction(budgetId, { sectionKey, subcategoryName, amount, memo, date }) {
@@ -71,5 +93,5 @@ export function useBudgets() {
     }))
   }
 
-  return { budgets, createBudget, deleteBudget, addTransaction, addBudgetItem }
+  return { budgets, createBudget, deleteBudget, addTransaction, updateTransaction, deleteTransaction, addBudgetItem }
 }
