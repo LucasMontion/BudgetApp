@@ -21,9 +21,10 @@ export function useBudgets() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
   }, [budgets])
 
-  function createBudget({ name, themeId, sections }) {
+  function createBudget({ type, name, themeId, sections }) {
     const budget = {
       id: createId(),
+      type: type ?? 'daily',
       name,
       themeId,
       sections,

@@ -14,38 +14,36 @@ export function CreateBudget({ onCreate, onCancel }) {
   const [step, setStep] = useState(1)
 
   // Step 1
+  const [budgetType, setBudgetType] = useState(null) // 'daily' | 'project'
+
+  // Step 2
   const [name, setName] = useState('')
   const [nameError, setNameError] = useState('')
   const [themeId, setThemeId] = useState(THEMES[0].id)
 
-  // Step 2
+  // Step 3
   const [includeIncome, setIncludeIncome] = useState(false)
   const [includeSavings, setIncludeSavings] = useState(false)
 
-  // Step 3
+  // Step 4
   const [items, setItems] = useState({
-    income: [newItem()],
-    bills: [newItem()],
+    income:   [newItem()],
+    bills:    [newItem()],
     variable: [newItem()],
-    savings: [newItem()],
+    savings:  [newItem()],
   })
 
   const theme = THEMES.find(t => t.id === themeId)
 
-  // ── item helpers ──────────────────────────────────────────────────
   function addItem(section) {
     setItems(prev => ({ ...prev, [section]: [...prev[section], newItem()] }))
   }
-
   function removeItem(section, id) {
     setItems(prev => ({
       ...prev,
-      [section]: prev[section].length > 1
-        ? prev[section].filter(i => i.id !== id)
-        : prev[section],
+      [section]: prev[section].length > 1 ? prev[section].filter(i => i.id !== id) : prev[section],
     }))
   }
-
   function updateItem(section, id, field, value) {
     setItems(prev => ({
       ...prev,
@@ -53,37 +51,44 @@ export function CreateBudget({ onCreate, onCancel }) {
     }))
   }
 
-  // ── navigation ───────────────────────────────────────────────────
   function handleBack() {
     if (step === 1) onCancel()
     else setStep(s => s - 1)
   }
 
+  function handleSelectType(type) {
+    setBudgetType(type)
+    setStep(2)
+  }
+
   function handleNext() {
-    if (step === 1) {
+    if (step === 2) {
       if (!name.trim()) { setNameError('Please enter a budget name.'); return }
-      setStep(2)
-    } else if (step === 2) {
       setStep(3)
+    } else if (step === 3) {
+      setStep(4)
     }
   }
 
   function handleCreate() {
     const filterItems = list => list.filter(i => i.name.trim())
+    const isProject = budgetType === 'project'
 
     onCreate({
+      type: budgetType,
       name: name.trim(),
       themeId,
       sections: {
-        income:   { enabled: includeIncome,  items: includeIncome  ? filterItems(items.income)  : [] },
-        bills:    { enabled: true,           items: filterItems(items.bills)   },
-        variable: { enabled: true,           items: filterItems(items.variable)},
-        savings:  { enabled: includeSavings, items: includeSavings ? filterItems(items.savings) : [] },
+        income:   { enabled: includeIncome,                    items: includeIncome  ? filterItems(items.income)   : [] },
+        bills:    { enabled: !isProject,                       items: !isProject     ? filterItems(items.bills)    : [] },
+        variable: { enabled: true,                             items: filterItems(items.variable) },
+        savings:  { enabled: !isProject && includeSavings,     items: (!isProject && includeSavings) ? filterItems(items.savings) : [] },
       },
     })
   }
 
-  // ── render ───────────────────────────────────────────────────────
+  const isProject = budgetType === 'project'
+
   return (
     <div className="screen">
       <header className="screen-header">
@@ -96,10 +101,11 @@ export function CreateBudget({ onCreate, onCancel }) {
         <div style={{ width: 40 }} />
       </header>
 
-      <StepBar current={step} total={3} labels={['Details', 'Sections', 'Items']} />
+      <StepBar current={step} total={4} labels={['Type', 'Details', 'Sections', 'Items']} />
 
       <div className="wizard-body">
-        {step === 1 && (
+        {step === 1 && <StepType onSelect={handleSelectType} />}
+        {step === 2 && (
           <StepDetails
             name={name} setName={n => { setName(n); setNameError('') }} nameError={nameError}
             themeId={themeId} setThemeId={setThemeId}
@@ -107,15 +113,17 @@ export function CreateBudget({ onCreate, onCancel }) {
             onNext={handleNext}
           />
         )}
-        {step === 2 && (
+        {step === 3 && (
           <StepSections
+            isProject={isProject}
             includeIncome={includeIncome} setIncludeIncome={setIncludeIncome}
             includeSavings={includeSavings} setIncludeSavings={setIncludeSavings}
             onNext={handleNext}
           />
         )}
-        {step === 3 && (
+        {step === 4 && (
           <StepItems
+            isProject={isProject}
             includeIncome={includeIncome} includeSavings={includeSavings}
             items={items}
             addItem={addItem} removeItem={removeItem} updateItem={updateItem}
@@ -154,7 +162,47 @@ function StepBar({ current, total, labels }) {
   )
 }
 
-// ── Step 1: Name & Theme ─────────────────────────────────────────────
+// ── Step 1: Budget Type ───────────────────────────────────────────────
+function StepType({ onSelect }) {
+  return (
+    <div className="step-content">
+      <div className="step-intro">
+        <h2 className="step-heading">What kind of budget?</h2>
+        <p className="step-sub">Choose the type that best fits your goal.</p>
+      </div>
+
+      <div className="type-cards">
+        <button className="type-card" onClick={() => onSelect('daily')}>
+          <div className="type-card__icon type-card__icon--daily">
+            <DailyLifeIcon />
+          </div>
+          <div className="type-card__text">
+            <p className="type-card__title">Daily Life</p>
+            <p className="type-card__desc">Regular income, fixed bills, variable expenses, and savings goals.</p>
+          </div>
+          <svg className="type-card__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+
+        <button className="type-card" onClick={() => onSelect('project')}>
+          <div className="type-card__icon type-card__icon--project">
+            <ProjectIcon />
+          </div>
+          <div className="type-card__text">
+            <p className="type-card__title">Project</p>
+            <p className="type-card__desc">Income and simple expenses for a specific project or goal. No fixed bills.</p>
+          </div>
+          <svg className="type-card__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 2: Name & Theme ─────────────────────────────────────────────
 function StepDetails({ name, setName, nameError, themeId, setThemeId, theme, onNext }) {
   return (
     <div className="step-content">
@@ -220,13 +268,17 @@ function StepDetails({ name, setName, nameError, themeId, setThemeId, theme, onN
   )
 }
 
-// ── Step 2: Sections ────────────────────────────────────────────────
-function StepSections({ includeIncome, setIncludeIncome, includeSavings, setIncludeSavings, onNext }) {
+// ── Step 3: Sections ────────────────────────────────────────────────
+function StepSections({ isProject, includeIncome, setIncludeIncome, includeSavings, setIncludeSavings, onNext }) {
   return (
     <div className="step-content">
       <div className="step-intro">
         <h2 className="step-heading">Set up sections</h2>
-        <p className="step-sub">Spendings is always included. Choose which other sections you need.</p>
+        <p className="step-sub">
+          {isProject
+            ? 'Expenses are always included. Optionally track income too.'
+            : 'Spendings are always included. Choose which other sections you need.'}
+        </p>
       </div>
 
       <div className="section-cards">
@@ -234,30 +286,45 @@ function StepSections({ includeIncome, setIncludeIncome, includeSavings, setIncl
           icon={<IncomeIcon />}
           color="#22C55E"
           title="Income"
-          description="Track your salary, freelance, and other earnings."
+          description={isProject ? 'Track revenue or funding for this project.' : 'Track your salary, freelance, and other earnings.'}
           checked={includeIncome}
           onChange={setIncludeIncome}
         />
 
-        <div className="section-card section-card--always-on">
-          <div className="section-card__icon" style={{ background: 'rgba(239,68,68,.12)', color: '#EF4444' }}>
-            <SpendingsIcon />
+        {isProject ? (
+          <div className="section-card section-card--always-on">
+            <div className="section-card__icon" style={{ background: 'rgba(249,115,22,.12)', color: '#F97316' }}>
+              <SpendingsIcon />
+            </div>
+            <div className="section-card__text">
+              <p className="section-card__title">Expenses</p>
+              <p className="section-card__desc">Simple expenses — no fixed bills.</p>
+            </div>
+            <div className="section-card__badge">Always on</div>
           </div>
-          <div className="section-card__text">
-            <p className="section-card__title">Spendings</p>
-            <p className="section-card__desc">Bills (fixed) and Variable Expenses.</p>
-          </div>
-          <div className="section-card__badge">Always on</div>
-        </div>
+        ) : (
+          <>
+            <div className="section-card section-card--always-on">
+              <div className="section-card__icon" style={{ background: 'rgba(239,68,68,.12)', color: '#EF4444' }}>
+                <SpendingsIcon />
+              </div>
+              <div className="section-card__text">
+                <p className="section-card__title">Spendings</p>
+                <p className="section-card__desc">Bills (fixed) and Variable Expenses.</p>
+              </div>
+              <div className="section-card__badge">Always on</div>
+            </div>
 
-        <SectionToggleCard
-          icon={<SavingsIcon />}
-          color="#8B5CF6"
-          title="Savings"
-          description="Set savings goals and track contributions."
-          checked={includeSavings}
-          onChange={setIncludeSavings}
-        />
+            <SectionToggleCard
+              icon={<SavingsIcon />}
+              color="#8B5CF6"
+              title="Savings"
+              description="Set savings goals and track contributions."
+              checked={includeSavings}
+              onChange={setIncludeSavings}
+            />
+          </>
+        )}
       </div>
 
       <button className="btn-primary" onClick={onNext}>
@@ -289,13 +356,13 @@ function SectionToggleCard({ icon, color, title, description, checked, onChange 
   )
 }
 
-// ── Step 3: Items ────────────────────────────────────────────────────
-function StepItems({ includeIncome, includeSavings, items, addItem, removeItem, updateItem, theme, onCreate }) {
+// ── Step 4: Items ────────────────────────────────────────────────────
+function StepItems({ isProject, includeIncome, includeSavings, items, addItem, removeItem, updateItem, theme, onCreate }) {
   return (
     <div className="step-content step-content--items">
       <div className="step-intro">
         <h2 className="step-heading">Add your entries</h2>
-        <p className="step-sub">Enter the <strong>expected</strong> amount for each item — what you plan to earn, spend, or save.</p>
+        <p className="step-sub">Enter the <strong>expected</strong> amount for each item — what you plan to earn or spend.</p>
       </div>
 
       {includeIncome && (
@@ -310,38 +377,50 @@ function StepItems({ includeIncome, includeSavings, items, addItem, removeItem, 
         />
       )}
 
-      <div className="items-group">
-        <div className="items-group__header">
-          <div className="items-group__dot" style={{ background: '#EF4444' }} />
-          <p className="items-group__title">Spendings</p>
-        </div>
-
+      {isProject ? (
         <ItemSection
-          label="Bills"
-          sublabel="Fixed expenses"
-          accent="#EF4444"
-          items={items.bills}
-          onAdd={() => addItem('bills')}
-          onRemove={id => removeItem('bills', id)}
-          onUpdate={(id, f, v) => updateItem('bills', id, f, v)}
-          addLabel="Add bill"
-          nested
-        />
-
-        <ItemSection
-          label="Variable Expenses"
-          sublabel="Day-to-day spending"
+          label="Expenses"
           accent="#F97316"
           items={items.variable}
           onAdd={() => addItem('variable')}
           onRemove={id => removeItem('variable', id)}
           onUpdate={(id, f, v) => updateItem('variable', id, f, v)}
           addLabel="Add expense"
-          nested
         />
-      </div>
+      ) : (
+        <div className="items-group">
+          <div className="items-group__header">
+            <div className="items-group__dot" style={{ background: '#EF4444' }} />
+            <p className="items-group__title">Spendings</p>
+          </div>
 
-      {includeSavings && (
+          <ItemSection
+            label="Bills"
+            sublabel="Fixed expenses"
+            accent="#EF4444"
+            items={items.bills}
+            onAdd={() => addItem('bills')}
+            onRemove={id => removeItem('bills', id)}
+            onUpdate={(id, f, v) => updateItem('bills', id, f, v)}
+            addLabel="Add bill"
+            nested
+          />
+
+          <ItemSection
+            label="Variable Expenses"
+            sublabel="Day-to-day spending"
+            accent="#F97316"
+            items={items.variable}
+            onAdd={() => addItem('variable')}
+            onRemove={id => removeItem('variable', id)}
+            onUpdate={(id, f, v) => updateItem('variable', id, f, v)}
+            addLabel="Add expense"
+            nested
+          />
+        </div>
+      )}
+
+      {!isProject && includeSavings && (
         <ItemSection
           label="Savings"
           accent="#8B5CF6"
@@ -418,6 +497,23 @@ function ItemSection({ label, sublabel, accent, items, onAdd, onRemove, onUpdate
 }
 
 // ── Icons ────────────────────────────────────────────────────────────
+function DailyLifeIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  )
+}
+
+function ProjectIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  )
+}
+
 function IncomeIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

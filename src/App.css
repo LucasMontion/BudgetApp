@@ -197,11 +197,29 @@ body {
   gap: 4px;
 }
 
+.budget-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .budget-card__name {
   font-size: 19px;
   font-weight: 700;
   color: white;
   text-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
+
+.budget-card__type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.2);
+  padding: 2px 8px;
+  border-radius: 99px;
+  letter-spacing: .2px;
+  flex-shrink: 0;
 }
 
 .budget-card__date {
@@ -814,12 +832,38 @@ body {
   background: transparent;
 }
 
+.overview-title-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
 .overview-title {
   font-size: 18px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -.2px;
 }
+
+.overview-type-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+}
+.overview-type-badge--daily {
+  background: rgba(16,185,129,.15);
+  color: #10B981;
+}
+.overview-type-badge--project {
+  background: rgba(249,115,22,.15);
+  color: #F97316;
+}
+[data-theme="dark"] .overview-type-badge--daily { background: rgba(16,185,129,.25); }
+[data-theme="dark"] .overview-type-badge--project { background: rgba(249,115,22,.25); }
 
 .ov-back-btn {
   width: 38px;
@@ -1099,6 +1143,163 @@ body {
   border: 1.5px solid rgba(255,255,255,.25);
   color: white;
   backdrop-filter: blur(8px);
+}
+
+/* ── Delete confirmation modal ── */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn .15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.confirm-sheet {
+  width: 100%;
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  padding: 28px 24px calc(32px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: slideUp .2s cubic-bezier(.32,0,.67,0);
+}
+
+.confirm-sheet__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #FEE2E2;
+  color: #EF4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+[data-theme="dark"] .confirm-sheet__icon {
+  background: rgba(239,68,68,.2);
+}
+
+.confirm-sheet__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.confirm-sheet__body {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.confirm-sheet__actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.confirm-sheet__cancel {
+  flex: 1;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--neutral-100);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font: inherit;
+}
+.confirm-sheet__cancel:active { opacity: .75; }
+
+.confirm-sheet__delete {
+  flex: 1;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: #EF4444;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font: inherit;
+}
+.confirm-sheet__delete:active { opacity: .85; }
+
+/* ── Budget type picker (step 1) ── */
+.type-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.type-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  transition: border-color .15s, box-shadow .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.type-card:active {
+  opacity: .85;
+}
+
+.type-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.type-card__icon--daily {
+  background: rgba(16,185,129,.12);
+  color: #10B981;
+}
+.type-card__icon--project {
+  background: rgba(249,115,22,.12);
+  color: #F97316;
+}
+
+.type-card__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.type-card__title {
+  font-size: 16px;
+  font-weight: 700;
+}
+.type-card__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.type-card__arrow {
+  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
 /* ══════════════════════════════════════

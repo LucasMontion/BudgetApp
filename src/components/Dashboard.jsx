@@ -1,6 +1,14 @@
+import { useState } from 'react'
 import { getTheme } from '../themes'
 
 export function Dashboard({ budgets, onCreateNew, onDeleteBudget, onOpenBudget, darkMode, onToggleDark }) {
+  const [pendingDelete, setPendingDelete] = useState(null) // budget object
+
+  function handleConfirmDelete() {
+    onDeleteBudget(pendingDelete.id)
+    setPendingDelete(null)
+  }
+
   return (
     <div className="screen">
       <header className="dashboard-header">
@@ -46,7 +54,7 @@ export function Dashboard({ budgets, onCreateNew, onDeleteBudget, onOpenBudget, 
                   budget={budget}
                   theme={theme}
                   onOpen={() => onOpenBudget(budget)}
-                  onDelete={() => onDeleteBudget(budget.id)}
+                  onRequestDelete={() => setPendingDelete(budget)}
                 />
               )
             })}
@@ -60,22 +68,34 @@ export function Dashboard({ budgets, onCreateNew, onDeleteBudget, onOpenBudget, 
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
       </button>
+
+      {pendingDelete && (
+        <DeleteConfirmModal
+          budget={pendingDelete}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
     </div>
   )
 }
 
-function BudgetCard({ budget, theme, onOpen, onDelete }) {
+function BudgetCard({ budget, theme, onOpen, onRequestDelete }) {
   const date = new Date(budget.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const isProject = budget.type === 'project'
 
   return (
     <div className="budget-card" style={{ background: theme.gradient }} onClick={onOpen} role="button" tabIndex={0}>
       <div className="budget-card__body">
-        <span className="budget-card__name">{budget.name}</span>
+        <div className="budget-card__title-row">
+          <span className="budget-card__name">{budget.name}</span>
+          <span className="budget-card__type-badge">{isProject ? 'Project' : 'Daily Life'}</span>
+        </div>
         <span className="budget-card__date">Created {date}</span>
       </div>
       <button
         className="budget-card__delete"
-        onClick={e => { e.stopPropagation(); onDelete() }}
+        onClick={e => { e.stopPropagation(); onRequestDelete() }}
         aria-label={`Delete ${budget.name}`}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -85,6 +105,31 @@ function BudgetCard({ budget, theme, onOpen, onDelete }) {
           <path d="M9 6V4h6v2" />
         </svg>
       </button>
+    </div>
+  )
+}
+
+function DeleteConfirmModal({ budget, onCancel, onConfirm }) {
+  return (
+    <div className="confirm-backdrop" onClick={onCancel}>
+      <div className="confirm-sheet" onClick={e => e.stopPropagation()}>
+        <div className="confirm-sheet__icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6M14 11v6" />
+            <path d="M9 6V4h6v2" />
+          </svg>
+        </div>
+        <h2 className="confirm-sheet__title">Delete budget?</h2>
+        <p className="confirm-sheet__body">
+          <strong>"{budget.name}"</strong> and all its transactions will be permanently removed.
+        </p>
+        <div className="confirm-sheet__actions">
+          <button className="confirm-sheet__cancel" onClick={onCancel}>Cancel</button>
+          <button className="confirm-sheet__delete" onClick={onConfirm}>Delete</button>
+        </div>
+      </div>
     </div>
   )
 }

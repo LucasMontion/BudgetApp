@@ -36,6 +36,7 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
 
   const hasIncome  = sections.income?.enabled
   const hasSavings = sections.savings?.enabled
+  const isProject  = budget.type === 'project'
 
   return (
     <div className="screen overview-screen">
@@ -45,7 +46,12 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1 className="overview-title">{budget.name}</h1>
+        <div className="overview-title-group">
+          <h1 className="overview-title">{budget.name}</h1>
+          <span className={`overview-type-badge overview-type-badge--${isProject ? 'project' : 'daily'}`}>
+            {isProject ? 'Project' : 'Daily Life'}
+          </span>
+        </div>
         <div style={{ width: 40 }} />
       </header>
 
@@ -67,33 +73,44 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
           />
         )}
 
-        <CategoryPanel
-          label="Expenses"
-          color="#F43F5E"
-          dashColor="rgba(244,63,94,.5)"
-          actual={expensesActual}
-          total={expensesTotal}
-          expandable
-          expanded={expensesOpen}
-          onTap={() => setExpensesOpen(o => !o)}
-        >
-          <SubCard
-            label="Bills"
-            sublabel="Fixed expenses"
-            color="#EF4444"
-            actual={billsActual}
-            total={billsTotal}
-            onTap={() => onOpenCategory('bills', 'Bills')}
-          />
-          <SubCard
-            label="Variable Expenses"
-            sublabel="Day-to-day"
+        {isProject ? (
+          <CategoryPanel
+            label="Expenses"
             color="#F97316"
+            dashColor="rgba(249,115,22,.5)"
             actual={variableActual}
             total={variableTotal}
-            onTap={() => onOpenCategory('variable', 'Variable Expenses')}
+            onTap={() => onOpenCategory('variable', 'Expenses')}
           />
-        </CategoryPanel>
+        ) : (
+          <CategoryPanel
+            label="Expenses"
+            color="#F43F5E"
+            dashColor="rgba(244,63,94,.5)"
+            actual={expensesActual}
+            total={expensesTotal}
+            expandable
+            expanded={expensesOpen}
+            onTap={() => setExpensesOpen(o => !o)}
+          >
+            <SubCard
+              label="Bills"
+              sublabel="Fixed expenses"
+              color="#EF4444"
+              actual={billsActual}
+              total={billsTotal}
+              onTap={() => onOpenCategory('bills', 'Bills')}
+            />
+            <SubCard
+              label="Variable Expenses"
+              sublabel="Day-to-day"
+              color="#F97316"
+              actual={variableActual}
+              total={variableTotal}
+              onTap={() => onOpenCategory('variable', 'Variable Expenses')}
+            />
+          </CategoryPanel>
+        )}
 
         {hasSavings && (
           <CategoryPanel
