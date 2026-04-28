@@ -817,6 +817,78 @@ body {
    Budget Overview
 ══════════════════════════════════════ */
 
+/* ── Period navigator ── */
+.period-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.period-nav__label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.2px;
+}
+
+.period-nav__arrow {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--neutral-100);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.period-nav__arrow:active { background: var(--neutral-200); }
+.period-nav__arrow:disabled { opacity: .3; cursor: default; }
+
+/* ── Recurrence picker (create form) ── */
+.recurrence-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.recurrence-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 4px;
+}
+
+.recurrence-pill {
+  padding: 7px 14px;
+  border-radius: 99px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.recurrence-pill--active {
+  border-color: #3B82F6;
+  background: rgba(59,130,246,.1);
+  color: #3B82F6;
+}
+[data-theme="dark"] .recurrence-pill--active {
+  background: rgba(59,130,246,.2);
+}
+
 /* ── Overview screen ── */
 .overview-screen {
   padding-bottom: 0;
@@ -1377,6 +1449,73 @@ body {
   flex-shrink: 0;
 }
 .add-txn__memo::placeholder { color: rgba(255,255,255,.3); }
+
+/* ── Date row ── */
+.add-txn__date-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.add-txn__date-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,.08);
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: rgba(255,255,255,.75);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.add-txn__date-toggle:active { background: rgba(255,255,255,.14); }
+
+.add-txn__date-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.toggle--sm {
+  width: 34px;
+  height: 20px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.toggle--sm .toggle__thumb {
+  width: 16px;
+  height: 16px;
+  top: 2px;
+  left: 2px;
+}
+.toggle--sm.toggle--on .toggle__thumb {
+  transform: translateX(14px);
+}
+
+.add-txn__date-toggle .toggle { background: rgba(255,255,255,.2); }
+.add-txn__date-toggle .toggle--on { background: rgba(255,255,255,.85); }
+.add-txn__date-toggle .toggle--on .toggle__thumb { background: #1C1F2E; }
+
+.add-txn__date-input {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: white;
+  font: inherit;
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+  color-scheme: dark;
+}
+.add-txn__date-input:focus {
+  border-color: rgba(255,255,255,.4);
+}
 
 /* ── Labeled sections inside add-txn ── */
 .add-txn__section {

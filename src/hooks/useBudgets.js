@@ -21,13 +21,15 @@ export function useBudgets() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
   }, [budgets])
 
-  function createBudget({ type, name, themeId, sections }) {
+  function createBudget({ type, name, themeId, sections, recurrent, recurrence }) {
     const budget = {
       id: createId(),
       type: type ?? 'daily',
       name,
       themeId,
       sections,
+      recurrent: recurrent ?? false,
+      recurrence: recurrence ?? null,
       createdAt: new Date().toISOString(),
     }
     setBudgets(prev => [budget, ...prev])
@@ -38,14 +40,14 @@ export function useBudgets() {
     setBudgets(prev => prev.filter(b => b.id !== id))
   }
 
-  function addTransaction(budgetId, { sectionKey, subcategoryName, amount, memo }) {
+  function addTransaction(budgetId, { sectionKey, subcategoryName, amount, memo, date }) {
     const txn = {
       id: createId(),
       sectionKey,
       subcategoryName,
       amount,
       memo,
-      date: new Date().toISOString(),
+      date: date || new Date().toISOString(),
     }
     setBudgets(prev => prev.map(b =>
       b.id === budgetId

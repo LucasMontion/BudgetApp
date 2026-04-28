@@ -16,11 +16,104 @@ function fmtMoney(n) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
+// ── Period helpers ────────────────────────────────────────────────────
+function getPeriodBounds(recurrence, offset) {
+  const now = new Date()
+
+  if (recurrence === 'weekly') {
+    const daysToMonday = (now.getDay() + 6) % 7
+    const start = new Date(now)
+    start.setDate(now.getDate() - daysToMonday + offset * 7)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(start)
+    end.setDate(start.getDate() + 6)
+    end.setHours(23, 59, 59, 999)
+    return { start, end }
+  }
+
+  if (recurrence === 'biweekly') {
+    const daysToMonday = (now.getDay() + 6) % 7
+    const thisMonday = new Date(now)
+    thisMonday.setDate(now.getDate() - daysToMonday)
+    thisMonday.setHours(0, 0, 0, 0)
+    const ref = new Date(2024, 0, 1) // known Monday anchor
+    const weeksSinceRef = Math.floor((thisMonday - ref) / (7 * 24 * 3600 * 1000))
+    const periodStartWeeks = Math.floor(weeksSinceRef / 2) * 2 + offset * 2
+    const start = new Date(ref)
+    start.setDate(ref.getDate() + periodStartWeeks * 7)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(start)
+    end.setDate(start.getDate() + 13)
+    end.setHours(23, 59, 59, 999)
+    return { start, end }
+  }
+
+  if (recurrence === 'monthly') {
+    const raw = now.getMonth() + offset
+    const year = now.getFullYear() + Math.floor(raw / 12)
+    const month = ((raw % 12) + 12) % 12
+    const start = new Date(year, month, 1, 0, 0, 0, 0)
+    const end = new Date(year, month + 1, 0, 23, 59, 59, 999)
+    return { start, end }
+  }
+
+  if (recurrence === 'quarterly') {
+    const rawQ = Math.floor(now.getMonth() / 3) + offset
+    const year = now.getFullYear() + Math.floor(rawQ / 4)
+    const q = ((rawQ % 4) + 4) % 4
+    const start = new Date(year, q * 3, 1, 0, 0, 0, 0)
+    const end = new Date(year, q * 3 + 3, 0, 23, 59, 59, 999)
+    return { start, end }
+  }
+
+  if (recurrence === 'yearly') {
+    const year = now.getFullYear() + offset
+    const start = new Date(year, 0, 1, 0, 0, 0, 0)
+    const end = new Date(year, 11, 31, 23, 59, 59, 999)
+    return { start, end }
+  }
+
+  return null
+}
+
+function getPeriodLabel(recurrence, offset) {
+  const bounds = getPeriodBounds(recurrence, offset)
+  if (!bounds) return ''
+  const { start, end } = bounds
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+  switch (recurrence) {
+    case 'weekly':
+    case 'biweekly':
+      return `${fmt(start)} – ${fmt(end)}`
+    case 'monthly':
+      return start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    case 'quarterly':
+      return `Q${Math.floor(start.getMonth() / 3) + 1} ${start.getFullYear()}`
+    case 'yearly':
+      return `${start.getFullYear()}`
+    default:
+      return ''
+  }
+}
+
+// ── Component ────────────────────────────────────────────────────────
 export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransaction }) {
   const [expensesOpen, setExpensesOpen] = useState(false)
-  const theme = getTheme(budget.themeId)
-  const sections = budget.sections || {}
-  const transactions = budget.transactions || []
+  const [periodOffset, setPeriodOffset] = useState(0)
+
+  const sections     = budget.sections || {}
+  const allTxns      = budget.transactions || []
+  const isProject    = budget.type === 'project'
+  const isRecurrent  = budget.recurrent && budget.recurrence && !isProject
+
+  // Filter transactions to the selected period when recurrent
+  const transactions = isRecurrent
+    ? (() => {
+        const { start, end } = getPeriodBounds(budget.recurrence, periodOffset)
+        return allTxns.filter(t => { const d = new Date(t.date); return d >= start && d <= end })
+      })()
+    : allTxns
 
   const incomeTotal    = sumItems(sections.income?.items)
   const billsTotal     = sumItems(sections.bills?.items)
@@ -36,7 +129,6 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
 
   const hasIncome  = sections.income?.enabled
   const hasSavings = sections.savings?.enabled
-  const isProject  = budget.type === 'project'
 
   return (
     <div className="screen overview-screen">
@@ -54,6 +146,31 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
         </div>
         <div style={{ width: 40 }} />
       </header>
+
+      {isRecurrent && (
+        <div className="period-nav">
+          <button
+            className="period-nav__arrow"
+            onClick={() => setPeriodOffset(o => o - 1)}
+            aria-label="Previous period"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <span className="period-nav__label">{getPeriodLabel(budget.recurrence, periodOffset)}</span>
+          <button
+            className="period-nav__arrow"
+            onClick={() => setPeriodOffset(o => o + 1)}
+            aria-label="Next period"
+            disabled={periodOffset >= 0}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <button className="ov-fab" onClick={onAddTransaction} aria-label="Add transaction">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -138,13 +255,10 @@ function CategoryPanel({ label, color, dashColor, actual, total, onTap, expandab
     >
       <button className="cat-panel__card" onClick={onTap} aria-expanded={expandable ? expanded : undefined}>
         <span className="cat-panel__label">{label}</span>
-
         <span className="cat-panel__amount">${fmtMoney(actual)}</span>
-
         <div className="cat-panel__track">
           <div className="cat-panel__fill" style={{ width: pctFill > 0 ? `${pctFill}%` : '3px' }} />
         </div>
-
         <div className="cat-panel__bottom">
           <span className="cat-panel__pct">{pctDisplay}%</span>
           {expandable && (

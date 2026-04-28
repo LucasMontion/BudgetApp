@@ -21,10 +21,14 @@ export function AddTransaction({ budget, initialSectionKey, onSave, onCancel }) 
   const available = buildAvailableCategories(sections)
   const defaultKey = available.includes(initialSectionKey) ? initialSectionKey : available[0] ?? 'bills'
 
+  const todayStr = new Date().toISOString().slice(0, 10)
+
   const [catKey, setCatKey] = useState(defaultKey)
   const [selectedSub, setSelectedSub] = useState(null)
   const [digits, setDigits] = useState('')
   const [memo, setMemo] = useState('')
+  const [useCustomDate, setUseCustomDate] = useState(false)
+  const [customDate, setCustomDate] = useState(todayStr)
   const [kbHeight, setKbHeight] = useState(0)
   const [kbOpen, setKbOpen] = useState(false)
 
@@ -82,7 +86,14 @@ export function AddTransaction({ budget, initialSectionKey, onSave, onCancel }) 
   function handleConfirm() {
     const amount = parseFloat(digits)
     if (!amount || amount <= 0 || !selectedSub) return
-    onSave({ sectionKey: catKey, subcategoryName: selectedSub, amount, memo: memo.trim() })
+    const date = useCustomDate
+      ? new Date(customDate + 'T12:00:00').toISOString()
+      : new Date().toISOString()
+    onSave({ sectionKey: catKey, subcategoryName: selectedSub, amount, memo: memo.trim(), date })
+  }
+
+  function fmtCustomDate(str) {
+    return new Date(str + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
   const canConfirm = parseFloat(digits) > 0 && !!selectedSub
@@ -124,6 +135,35 @@ export function AddTransaction({ budget, initialSectionKey, onSave, onCancel }) 
           onChange={e => setMemo(e.target.value)}
           autoComplete="off"
         />
+
+        <div className="add-txn__date-row">
+          <button
+            className="add-txn__date-toggle"
+            onClick={() => setUseCustomDate(d => !d)}
+            type="button"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span className="add-txn__date-label">
+              {useCustomDate ? fmtCustomDate(customDate) : 'Today'}
+            </span>
+            <div className={`toggle toggle--sm${useCustomDate ? ' toggle--on' : ''}`} aria-hidden="true">
+              <div className="toggle__thumb" />
+            </div>
+          </button>
+          {useCustomDate && (
+            <input
+              type="date"
+              className="add-txn__date-input"
+              value={customDate}
+              max={todayStr}
+              onChange={e => setCustomDate(e.target.value)}
+            />
+          )}
+        </div>
       </div>
 
       <div className="add-txn__bottom">

@@ -24,6 +24,8 @@ export function CreateBudget({ onCreate, onCancel }) {
   // Step 3
   const [includeIncome, setIncludeIncome] = useState(false)
   const [includeSavings, setIncludeSavings] = useState(false)
+  const [recurrent, setRecurrent] = useState(false)
+  const [recurrence, setRecurrence] = useState('monthly')
 
   // Step 4
   const [items, setItems] = useState({
@@ -78,6 +80,8 @@ export function CreateBudget({ onCreate, onCancel }) {
       type: budgetType,
       name: name.trim(),
       themeId,
+      recurrent: budgetType === 'daily' ? recurrent : false,
+      recurrence: budgetType === 'daily' && recurrent ? recurrence : null,
       sections: {
         income:   { enabled: includeIncome,                    items: includeIncome  ? filterItems(items.income)   : [] },
         bills:    { enabled: !isProject,                       items: !isProject     ? filterItems(items.bills)    : [] },
@@ -118,6 +122,8 @@ export function CreateBudget({ onCreate, onCancel }) {
             isProject={isProject}
             includeIncome={includeIncome} setIncludeIncome={setIncludeIncome}
             includeSavings={includeSavings} setIncludeSavings={setIncludeSavings}
+            recurrent={recurrent} setRecurrent={setRecurrent}
+            recurrence={recurrence} setRecurrence={setRecurrence}
             onNext={handleNext}
           />
         )}
@@ -268,8 +274,16 @@ function StepDetails({ name, setName, nameError, themeId, setThemeId, theme, onN
   )
 }
 
+const RECURRENCE_OPTIONS = [
+  { value: 'weekly',    label: 'Weekly' },
+  { value: 'biweekly',  label: 'Bi-weekly' },
+  { value: 'monthly',   label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'yearly',    label: 'Yearly' },
+]
+
 // ── Step 3: Sections ────────────────────────────────────────────────
-function StepSections({ isProject, includeIncome, setIncludeIncome, includeSavings, setIncludeSavings, onNext }) {
+function StepSections({ isProject, includeIncome, setIncludeIncome, includeSavings, setIncludeSavings, recurrent, setRecurrent, recurrence, setRecurrence, onNext }) {
   return (
     <div className="step-content">
       <div className="step-intro">
@@ -323,6 +337,31 @@ function StepSections({ isProject, includeIncome, setIncludeIncome, includeSavin
               checked={includeSavings}
               onChange={setIncludeSavings}
             />
+
+            <div className="recurrence-section">
+              <SectionToggleCard
+                icon={<RecurrenceIcon />}
+                color="#3B82F6"
+                title="Recurring budget"
+                description="Resets each period — keeps structure, clears actuals."
+                checked={recurrent}
+                onChange={setRecurrent}
+              />
+              {recurrent && (
+                <div className="recurrence-pills">
+                  {RECURRENCE_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className={`recurrence-pill${recurrence === opt.value ? ' recurrence-pill--active' : ''}`}
+                      onClick={() => setRecurrence(opt.value)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -526,6 +565,15 @@ function SpendingsIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
+    </svg>
+  )
+}
+
+function RecurrenceIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M23 4v6h-6" /><path d="M1 20v-6h6" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
     </svg>
   )
 }
