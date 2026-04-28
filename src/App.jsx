@@ -20,6 +20,8 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')
     localStorage.setItem('theme', darkMode ? 'dark' : 'light')
+    const metaTheme = document.querySelector('meta[name="theme-color"]')
+    if (metaTheme) metaTheme.setAttribute('content', darkMode ? '#0F1117' : '#F8F9FB')
   }, [darkMode])
 
   const { budgets, createBudget, deleteBudget, addTransaction, updateTransaction, deleteTransaction, addBudgetItem } = useBudgets()
