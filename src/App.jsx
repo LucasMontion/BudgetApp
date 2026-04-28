@@ -5,6 +5,7 @@ import { BudgetOverview } from './components/BudgetOverview'
 import { CategoryDetail } from './components/CategoryDetail'
 import { AddTransaction } from './components/AddTransaction'
 import { TransactionList } from './components/TransactionList'
+import { BudgetDetail } from './components/BudgetDetail'
 import { useBudgets } from './hooks/useBudgets'
 import './App.css'
 
@@ -87,6 +88,16 @@ export default function App() {
           onBack={() => setScreen('dashboard')}
           onOpenCategory={handleOpenCategory}
           onAddTransaction={() => openAddTxn(null)}
+          onOpenDetail={() => setScreen('detail')}
+        />
+      )}
+
+      {screen === 'detail' && activeBudget && (
+        <BudgetDetail
+          budget={activeBudget}
+          onBack={() => setScreen('overview')}
+          onUpdateTransaction={(txnId, updates) => updateTransaction(activeBudgetId, txnId, updates)}
+          onDeleteTransaction={(txnId) => deleteTransaction(activeBudgetId, txnId)}
         />
       )}
 
