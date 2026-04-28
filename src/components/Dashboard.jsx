@@ -1,0 +1,97 @@
+import { getTheme } from '../themes'
+
+export function Dashboard({ budgets, onCreateNew, onDeleteBudget, onOpenBudget, darkMode, onToggleDark }) {
+  return (
+    <div className="screen">
+      <header className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">My Budgets</h1>
+        </div>
+        <button className="avatar theme-toggle" onClick={onToggleDark} aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {darkMode ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
+        </button>
+      </header>
+
+      <div className="dashboard-body">
+        {budgets.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state__icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+              </svg>
+            </div>
+            <h2 className="empty-state__title">No budgets yet</h2>
+            <p className="empty-state__body">Create your first budget to start tracking your spending.</p>
+          </div>
+        ) : (
+          <div className="budget-list">
+            {budgets.map(budget => {
+              const theme = getTheme(budget.themeId)
+              return (
+                <BudgetCard
+                  key={budget.id}
+                  budget={budget}
+                  theme={theme}
+                  onOpen={() => onOpenBudget(budget)}
+                  onDelete={() => onDeleteBudget(budget.id)}
+                />
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <button className="fab" onClick={onCreateNew} aria-label="Create new budget">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+function BudgetCard({ budget, theme, onOpen, onDelete }) {
+  const date = new Date(budget.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+  return (
+    <div className="budget-card" style={{ background: theme.gradient }} onClick={onOpen} role="button" tabIndex={0}>
+      <div className="budget-card__body">
+        <span className="budget-card__name">{budget.name}</span>
+        <span className="budget-card__date">Created {date}</span>
+      </div>
+      <button
+        className="budget-card__delete"
+        onClick={e => { e.stopPropagation(); onDelete() }}
+        aria-label={`Delete ${budget.name}`}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          <path d="M10 11v6M14 11v6" />
+          <path d="M9 6V4h6v2" />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'morning'
+  if (h < 18) return 'afternoon'
+  return 'evening'
+}
