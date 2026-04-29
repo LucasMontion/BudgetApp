@@ -17,7 +17,7 @@ function fmtMoney(n) {
 }
 
 // ── Period helpers ────────────────────────────────────────────────────
-function getPeriodBounds(recurrence, offset, opts = {}) {
+export function getPeriodBounds(recurrence, offset, opts = {}) {
   const now = new Date()
 
   if (recurrence === 'weekly') {
