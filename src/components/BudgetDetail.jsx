@@ -159,6 +159,10 @@ function CategoryBreakdownTabs({ sectionRows, sections, transactions, incomeTota
                   const exp = parseFloat(item.amount) || 0
                   const act = actualsMap[item.name] || 0
                   const color = PIE_COLORS[idx % PIE_COLORS.length]
+                  
+                  const incPctExpectedSub = incomeTotal > 0 ? ((exp / incomeTotal) * 100).toFixed(1) : 0
+                  const incPctActualSub = incomeActual > 0 ? ((act / incomeActual) * 100).toFixed(1) : 0
+
                   return (
                     <div key={item.id || item.name}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 6 }}>
@@ -167,8 +171,8 @@ function CategoryBreakdownTabs({ sectionRows, sections, transactions, incomeTota
                           {item.name}
                         </span>
                         <div style={{ display: 'flex', gap: 12, fontSize: '0.75rem' }}>
-                          <span style={{ color: '#9CA3AF' }}>Exp: ${fmtMoney(exp)}</span>
-                          <span style={{ fontWeight: 600 }}>Act: ${fmtMoney(act)}</span>
+                          <span style={{ color: '#9CA3AF' }}>Exp: ${fmtMoney(exp)} {r.key !== 'income' && `(${incPctExpectedSub}%)`}</span>
+                          <span style={{ fontWeight: 600 }}>Act: ${fmtMoney(act)} {r.key !== 'income' && <span style={{ color: '#9CA3AF', fontWeight: 'normal' }}>({incPctActualSub}%)</span>}</span>
                         </div>
                       </div>
                       <div style={{ height: 6, background: 'var(--border)', borderRadius: 3, marginBottom: 3, overflow: 'hidden' }}>
