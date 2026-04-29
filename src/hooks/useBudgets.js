@@ -1,27 +1,106 @@
 import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 const STORAGE_KEY = 'budgets_v1'
+const BUDGET_LIMIT = 5
 
 function createId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
   return `id_${Date.now()}_${Math.random().toString(16).slice(2)}`
 }
 
-export function useBudgets() {
-  const [budgets, setBudgets] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      return stored ? JSON.parse(stored) : []
-    } catch {
-      return []
-    }
-  })
+function localLoad() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch { return [] }
+}
+
+async function cloudLoad(userId) {
+  const { data } = await supabase
+    .from('user_budgets')
+    .select('data')
+    .eq('user_id', userId)
+    .maybeSingle()
+  return data?.data ?? []
+}
+
+function cloudSave(userId, budgets) {
+  supabase
+    .from('user_budgets')
+    .upsert({ user_id: userId, data: budgets, updated_at: new Date().toISOString() })
+    .then()
+}
+
+export function useBudgets(user) {
+  const [budgets, setBudgets] = useState([])
+  const [syncing, setSyncing] = useState(false)
+  const [ready, setReady] = useState(false)
+  const [importConflict, setImportConflict] = useState(null)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
-  }, [budgets])
+    setReady(false)
+    setImportConflict(null)
+
+    if (!user) {
+      setBudgets(localLoad())
+      setReady(true)
+      return
+    }
+
+    let cancelled = false
+    setSyncing(true)
+
+    cloudLoad(user.id)
+      .then(cloudBudgets => {
+        if (cancelled) return
+        const localBudgets = localLoad()
+
+        if (localBudgets.length > 0 && cloudBudgets.length > 0) {
+          // Both exist — let user choose
+          setImportConflict({ localBudgets, cloudBudgets })
+          setBudgets(cloudBudgets)
+        } else if (localBudgets.length > 0) {
+          // Auto-import guest data into new cloud account
+          setBudgets(localBudgets)
+          localStorage.removeItem(STORAGE_KEY)
+        } else {
+          setBudgets(cloudBudgets)
+        }
+      })
+      .catch(() => {
+        if (cancelled) return
+        // Supabase unreachable — fall back to local cache
+        setBudgets(localLoad())
+      })
+      .finally(() => {
+        if (cancelled) return
+        setSyncing(false)
+        setReady(true)
+      })
+
+    return () => { cancelled = true }
+  }, [user?.id])
+
+  // Persist whenever budgets change (gated on ready so initial load doesn't double-write)
+  useEffect(() => {
+    if (!ready) return
+    if (user) {
+      cloudSave(user.id, budgets)
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
+    }
+  }, [budgets, ready, user?.id])
+
+  function resolveImport(useLocal) {
+    if (!importConflict) return
+    setBudgets(useLocal ? importConflict.localBudgets : importConflict.cloudBudgets)
+    localStorage.removeItem(STORAGE_KEY)
+    setImportConflict(null)
+  }
 
   function createBudget({ type, name, themeId, sections, recurrent, recurrence, recurrenceDays, recurrenceStart }) {
+    if (budgets.length >= BUDGET_LIMIT) return null
     const budget = {
       id: createId(),
       type: type ?? 'daily',
@@ -137,5 +216,18 @@ export function useBudgets() {
     }))
   }
 
-  return { budgets, createBudget, deleteBudget, addTransaction, updateTransaction, deleteTransaction, addBudgetItem, updateBudgetItem, deleteBudgetItem }
+  return {
+    budgets,
+    syncing,
+    importConflict,
+    resolveImport,
+    createBudget,
+    deleteBudget,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    addBudgetItem,
+    updateBudgetItem,
+    deleteBudgetItem,
+  }
 }

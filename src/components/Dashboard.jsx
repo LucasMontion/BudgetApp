@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { getTheme } from '../themes'
 
-export function Dashboard({ budgets, onCreateNew, onDeleteBudget, onOpenBudget, darkMode, onToggleDark }) {
-  const [pendingDelete, setPendingDelete] = useState(null) // budget object
+export function Dashboard({ budgets, onCreateNew, onDeleteBudget, onOpenBudget, darkMode, onToggleDark, user, syncing, onAccountPress }) {
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const atLimit = budgets.length >= 5
 
   function handleConfirmDelete() {
     onDeleteBudget(pendingDelete.id)
@@ -14,36 +15,65 @@ export function Dashboard({ budgets, onCreateNew, onDeleteBudget, onOpenBudget, 
       <header className="dashboard-header">
         <div>
           <h1 className="dashboard-title">My Budgets</h1>
+          {atLimit && <p className="dashboard-limit-note">5 / 5 — limit reached</p>}
         </div>
-        <button className="avatar theme-toggle" onClick={onToggleDark} aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
-          {darkMode ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="5" />
-              <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-              <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-            </svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-            </svg>
-          )}
-        </button>
+        <div className="dashboard-header__actions">
+          {syncing && <span className="sync-dot" title="Syncing…" />}
+          <button
+            className="avatar theme-toggle"
+            onClick={onToggleDark}
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {darkMode ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
+          <button
+            className={`avatar account-btn${user ? ' account-btn--signed-in' : ''}`}
+            onClick={onAccountPress}
+            aria-label={user ? 'Account' : 'Sign in'}
+          >
+            {user ? (
+              <span className="account-btn__initial">{user.email[0].toUpperCase()}</span>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            )}
+          </button>
+        </div>
       </header>
 
       <div className="dashboard-body">
         {budgets.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state__icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <line x1="2" y1="10" x2="22" y2="10" />
-              </svg>
+          syncing ? (
+            <div className="loading-state">
+              <div className="loading-spinner" />
+              <p className="loading-state__label">Loading your budgets…</p>
             </div>
-            <h2 className="empty-state__title">No budgets yet</h2>
-            <p className="empty-state__body">Create your first budget to start tracking your spending.</p>
-          </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state__icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+              </div>
+              <h2 className="empty-state__title">No budgets yet</h2>
+              <p className="empty-state__body">Create your first budget to start tracking your spending.</p>
+            </div>
+          )
         ) : (
           <div className="budget-list">
             {budgets.map(budget => {
@@ -62,12 +92,14 @@ export function Dashboard({ budgets, onCreateNew, onDeleteBudget, onOpenBudget, 
         )}
       </div>
 
-      <button className="fab" onClick={onCreateNew} aria-label="Create new budget">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-      </button>
+      {!atLimit && (
+        <button className="fab" onClick={onCreateNew} aria-label="Create new budget">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      )}
 
       {pendingDelete && (
         <DeleteConfirmModal
@@ -132,11 +164,4 @@ function DeleteConfirmModal({ budget, onCancel, onConfirm }) {
       </div>
     </div>
   )
-}
-
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 18) return 'afternoon'
-  return 'evening'
 }
