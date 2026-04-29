@@ -15,6 +15,7 @@ export default function App() {
   const [activeSection, setActiveSection]   = useState(null) // { key, label }
   const [addTxnOpen, setAddTxnOpen]         = useState(false)
   const [addTxnSection, setAddTxnSection]   = useState(null)
+  const [addTxnSubcategory, setAddTxnSubcategory] = useState(null)
   const [activeSubcategory, setActiveSubcategory] = useState(null)
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark')
 
@@ -25,7 +26,7 @@ export default function App() {
     if (metaTheme) metaTheme.setAttribute('content', darkMode ? '#0F1117' : '#F8F9FB')
   }, [darkMode])
 
-  const { budgets, createBudget, deleteBudget, addTransaction, updateTransaction, deleteTransaction, addBudgetItem } = useBudgets()
+  const { budgets, createBudget, deleteBudget, addTransaction, updateTransaction, deleteTransaction, addBudgetItem, updateBudgetItem, deleteBudgetItem } = useBudgets()
   const activeBudget = budgets.find(b => b.id === activeBudgetId) ?? null
 
   function handleCreate(budgetData) {
@@ -48,8 +49,9 @@ export default function App() {
     setScreen('subcategory')
   }
 
-  function openAddTxn(sectionKey = null) {
+  function openAddTxn(sectionKey = null, subcategory = null) {
     setAddTxnSection(sectionKey)
+    setAddTxnSubcategory(subcategory)
     setAddTxnOpen(true)
   }
 
@@ -109,6 +111,8 @@ export default function App() {
           onBack={() => setScreen('overview')}
           onAddTransaction={() => openAddTxn(activeSection.key)}
           onAddItem={handleAddItem}
+          onUpdateItem={(itemId, updates) => updateBudgetItem(activeBudgetId, activeSection.key, itemId, updates)}
+          onDeleteItem={(itemId) => deleteBudgetItem(activeBudgetId, activeSection.key, itemId)}
           onOpenSubcategory={handleOpenSubcategory}
         />
       )}
@@ -120,7 +124,7 @@ export default function App() {
           sectionLabel={activeSection.label}
           subcategoryName={activeSubcategory}
           onBack={() => setScreen('category')}
-          onAddTransaction={() => openAddTxn(activeSection.key)}
+          onAddTransaction={() => openAddTxn(activeSection.key, activeSubcategory)}
           onUpdateTransaction={(txnId, updates) => updateTransaction(activeBudgetId, txnId, updates)}
           onDeleteTransaction={(txnId) => deleteTransaction(activeBudgetId, txnId)}
         />
@@ -130,6 +134,7 @@ export default function App() {
         <AddTransaction
           budget={activeBudget}
           initialSectionKey={addTxnSection}
+          initialSubcategory={addTxnSubcategory}
           onSave={handleSaveTxn}
           onCancel={() => setAddTxnOpen(false)}
         />

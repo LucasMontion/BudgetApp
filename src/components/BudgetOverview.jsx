@@ -94,7 +94,7 @@ export function getPeriodBounds(recurrence, offset, opts = {}) {
   return null
 }
 
-function getPeriodLabel(recurrence, offset, opts = {}) {
+export function getPeriodLabel(recurrence, offset, opts = {}) {
   const bounds = getPeriodBounds(recurrence, offset, opts)
   if (!bounds) return ''
   const { start, end } = bounds
@@ -282,11 +282,13 @@ function CategoryPanel({ label, color, dashColor, actual, total, onTap, expandab
       <button className="cat-panel__card" onClick={onTap} aria-expanded={expandable ? expanded : undefined}>
         <span className="cat-panel__label">{label}</span>
         <span className="cat-panel__amount">${fmtMoney(actual)}</span>
-        <div className="cat-panel__track">
-          <div className="cat-panel__fill" style={{ width: pctFill > 0 ? `${pctFill}%` : '3px' }} />
-        </div>
+        {total > 0 && (
+          <div className="cat-panel__track">
+            <div className="cat-panel__fill" style={{ width: pctFill > 0 ? `${pctFill}%` : '3px' }} />
+          </div>
+        )}
         <div className="cat-panel__bottom">
-          <span className="cat-panel__pct">{pctDisplay}%</span>
+          {total > 0 && <span className="cat-panel__pct">{pctDisplay}%</span>}
           {expandable && (
             <svg
               className={`cat-panel__chevron${expanded ? ' cat-panel__chevron--open' : ''}`}
@@ -323,10 +325,12 @@ function SubCard({ label, sublabel, color, actual, total, onTap }) {
         <span className="sub-card__sublabel">{sublabel}</span>
       </div>
       <span className="sub-card__amount">${fmtMoney(actual)}</span>
-      <div className="sub-card__track">
-        <div className="sub-card__fill" style={{ width: pctFill > 0 ? `${pctFill}%` : '3px' }} />
-      </div>
-      <span className="sub-card__pct">{pctDisplay}%</span>
+      {total > 0 && (
+        <div className="sub-card__track">
+          <div className="sub-card__fill" style={{ width: pctFill > 0 ? `${pctFill}%` : '3px' }} />
+        </div>
+      )}
+      {total > 0 && <span className="sub-card__pct">{pctDisplay}%</span>}
     </button>
   )
 }

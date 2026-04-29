@@ -16,7 +16,7 @@ function buildAvailableCategories(sections) {
   return cats
 }
 
-export function AddTransaction({ budget, initialSectionKey, onSave, onCancel }) {
+export function AddTransaction({ budget, initialSectionKey, initialSubcategory, onSave, onCancel }) {
   const sections = budget.sections || {}
   const available = buildAvailableCategories(sections)
   const defaultKey = available.includes(initialSectionKey) ? initialSectionKey : available[0] ?? 'bills'
@@ -24,7 +24,7 @@ export function AddTransaction({ budget, initialSectionKey, onSave, onCancel }) 
   const todayStr = new Date().toISOString().slice(0, 10)
 
   const [catKey, setCatKey] = useState(defaultKey)
-  const [selectedSub, setSelectedSub] = useState(null)
+  const [selectedSub, setSelectedSub] = useState(initialSubcategory ?? null)
   const [digits, setDigits] = useState('')
   const [memo, setMemo] = useState('')
   const [useCustomDate, setUseCustomDate] = useState(false)

@@ -2103,6 +2103,36 @@ body {
   color: var(--text-secondary);
 }
 
+/* ── Sub-category row with edit button ── */
+.catitem-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.catitem-row .catitem {
+  flex: 1;
+}
+
+.catitem-row__edit {
+  flex-shrink: 0;
+  width: 40px;
+  background: var(--surface);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  transition: opacity .15s;
+}
+
+.catitem-row__edit:active {
+  opacity: 0.6;
+}
+
 /* ── Add sub-category form ── */
 .catdetail__add-btn {
   display: flex;

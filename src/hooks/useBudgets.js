@@ -93,5 +93,49 @@ export function useBudgets() {
     }))
   }
 
-  return { budgets, createBudget, deleteBudget, addTransaction, updateTransaction, deleteTransaction, addBudgetItem }
+  function updateBudgetItem(budgetId, sectionKey, itemId, { name, amount }) {
+    setBudgets(prev => prev.map(b => {
+      if (b.id !== budgetId) return b
+      const section = b.sections?.[sectionKey] ?? { enabled: true, items: [] }
+      const oldItem = section.items.find(i => i.id === itemId)
+      const oldName = oldItem?.name
+      const newName = name ?? oldName
+      return {
+        ...b,
+        sections: {
+          ...b.sections,
+          [sectionKey]: {
+            ...section,
+            items: section.items.map(i =>
+              i.id === itemId ? { ...i, name: newName, amount: amount ?? i.amount } : i
+            ),
+          },
+        },
+        transactions: (b.transactions || []).map(t =>
+          t.sectionKey === sectionKey && t.subcategoryName === oldName
+            ? { ...t, subcategoryName: newName }
+            : t
+        ),
+      }
+    }))
+  }
+
+  function deleteBudgetItem(budgetId, sectionKey, itemId) {
+    setBudgets(prev => prev.map(b => {
+      if (b.id !== budgetId) return b
+      const section = b.sections?.[sectionKey] ?? { enabled: true, items: [] }
+      return {
+        ...b,
+        sections: {
+          ...b.sections,
+          [sectionKey]: {
+            ...section,
+            items: section.items.filter(i => i.id !== itemId),
+          },
+        },
+      }
+    }))
+  }
+
+  return { budgets, createBudget, deleteBudget, addTransaction, updateTransaction, deleteTransaction, addBudgetItem, updateBudgetItem, deleteBudgetItem }
 }
