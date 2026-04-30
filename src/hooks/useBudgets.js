@@ -206,8 +206,8 @@ export function useBudgets(user) {
     }))
   }
 
-  function addCard(budgetId, { name, limit, cycleStartDay, color }) {
-    const card = { id: createId(), name, limit: parseFloat(limit) || 0, cycleStartDay: parseInt(cycleStartDay), color }
+  function addCard(budgetId, { name, limit, cycleStartDay, cycleDays, color }) {
+    const card = { id: createId(), name, limit: parseFloat(limit) || 0, cycleStartDay: parseInt(cycleStartDay), cycleDays: cycleDays || null, color }
     setBudgets(prev => prev.map(b =>
       b.id !== budgetId ? b : { ...b, cards: [...(b.cards || []), card] }
     ))

@@ -24,7 +24,7 @@ export function CardDetail({ budget, cardId, onBack, onAddPayment, onDeletePayme
 
   if (!card) return null
 
-  const { currentStart, currentEnd } = getCardCycleBounds(card.cycleStartDay)
+  const { currentStart, currentEnd } = getCardCycleBounds(card.cycleStartDay, card.cycleDays || null)
   const allTxns     = budget.transactions || []
   const allPayments = budget.cardPayments || []
 

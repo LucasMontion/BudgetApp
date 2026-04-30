@@ -602,6 +602,7 @@ function StepCards({ cards, setCards, onNext }) {
   const [name, setName]               = useState('')
   const [limit, setLimit]             = useState('')
   const [cycleDay, setCycleDay]       = useState(1)
+  const [cycleDays, setCycleDays]     = useState('')
   const [color, setColor]             = useState(CARD_COLORS[0].hex)
   const [error, setError]             = useState(null)
 
@@ -612,9 +613,10 @@ function StepCards({ cards, setCards, onNext }) {
       name: name.trim(),
       limit: parseFloat(limit) || 0,
       cycleStartDay: Math.min(28, Math.max(1, parseInt(cycleDay) || 1)),
+      cycleDays: parseInt(cycleDays) || null,
       color,
     }])
-    setName(''); setLimit(''); setCycleDay(1); setColor(CARD_COLORS[0].hex)
+    setName(''); setLimit(''); setCycleDay(1); setCycleDays(''); setColor(CARD_COLORS[0].hex)
     setError(null)
     setFormOpen(false)
   }
@@ -687,9 +689,23 @@ function StepCards({ cards, setCards, onNext }) {
             </div>
           </div>
 
-          <div className="field">
-            <label className="field-label">Billing cycle start day</label>
-            <input className="field-input" type="number" min="1" max="28" value={cycleDay} onChange={e => setCycleDay(e.target.value)} />
+          <div className="manage-card-sheet__row">
+            <div className="field" style={{ flex: 1 }}>
+              <label className="field-label">Cycle start day</label>
+              <input className="field-input" type="number" min="1" max="28" value={cycleDay} onChange={e => setCycleDay(e.target.value)} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label className="field-label">Cycle length (days)</label>
+              <input
+                className="field-input"
+                type="number"
+                min="1"
+                max="365"
+                placeholder="Monthly"
+                value={cycleDays}
+                onChange={e => setCycleDays(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="field">

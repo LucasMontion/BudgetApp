@@ -11,7 +11,7 @@ export const CARD_COLORS = [
 
 // ── Cycle helpers ─────────────────────────────────────────────────────
 
-export function getCardCycleBounds(cycleStartDay) {
+export function getCardCycleBounds(cycleStartDay, cycleDays = null) {
   const today = new Date()
   const day   = today.getDate()
   const month = today.getMonth()
@@ -22,10 +22,17 @@ export function getCardCycleBounds(cycleStartDay) {
 
   const currentStart = new Date(startYear, startMonth, cycleStartDay, 0, 0, 0, 0)
 
-  const nextMonth = (startMonth + 1) % 12
-  const nextYear  = startMonth === 11 ? startYear + 1 : startYear
-  const currentEnd = new Date(nextYear, nextMonth, cycleStartDay, 0, 0, 0, 0)
-  currentEnd.setMilliseconds(-1)
+  let currentEnd
+  if (cycleDays) {
+    currentEnd = new Date(currentStart)
+    currentEnd.setDate(currentStart.getDate() + cycleDays)
+    currentEnd.setMilliseconds(-1)
+  } else {
+    const nextMonth = (startMonth + 1) % 12
+    const nextYear  = startMonth === 11 ? startYear + 1 : startYear
+    currentEnd = new Date(nextYear, nextMonth, cycleStartDay, 0, 0, 0, 0)
+    currentEnd.setMilliseconds(-1)
+  }
 
   const prevMonth = startMonth === 0 ? 11 : startMonth - 1
   const prevYear  = startMonth === 0 ? startYear - 1 : startYear
@@ -88,7 +95,7 @@ export function CardsPanel({ budget, onOpenCard, onAddCard, onUpdateCard, onDele
 }
 
 function CardSummaryRow({ card, budget, onOpen }) {
-  const { currentStart, currentEnd } = getCardCycleBounds(card.cycleStartDay)
+  const { currentStart, currentEnd } = getCardCycleBounds(card.cycleStartDay, card.cycleDays || null)
 
   const cardTxns     = (budget.transactions || []).filter(t => t.cardId === card.id)
   const cardPayments = (budget.cardPayments || []).filter(p => p.cardId === card.id)
@@ -138,12 +145,14 @@ export function ManageCardSheet({ existing, onSave, onClose }) {
   const [name, setName]               = useState(existing?.name ?? '')
   const [limit, setLimit]             = useState(existing?.limit ? String(existing.limit) : '')
   const [cycleStartDay, setCycleDay]  = useState(existing?.cycleStartDay ?? 1)
+  const [cycleDays, setCycleDays]     = useState(existing?.cycleDays ? String(existing.cycleDays) : '')
   const [color, setColor]             = useState(existing?.color ?? CARD_COLORS[0].hex)
   const [error, setError]             = useState(null)
 
   function handleSave() {
     if (!name.trim()) { setError('Card name is required'); return }
-    onSave({ name: name.trim(), limit, cycleStartDay, color })
+    const parsedCycleDays = parseInt(cycleDays) || null
+    onSave({ name: name.trim(), limit, cycleStartDay, cycleDays: parsedCycleDays, color })
   }
 
   return (
@@ -166,9 +175,23 @@ export function ManageCardSheet({ existing, onSave, onClose }) {
           </div>
         </div>
 
-        <div className="field">
-          <label className="field-label">Billing cycle start day</label>
-          <input className="field-input" type="number" min="1" max="28" value={cycleStartDay} onChange={e => setCycleDay(Number(e.target.value))} />
+        <div className="manage-card-sheet__row">
+          <div className="field" style={{ flex: 1 }}>
+            <label className="field-label">Cycle start day</label>
+            <input className="field-input" type="number" min="1" max="28" value={cycleStartDay} onChange={e => setCycleDay(Number(e.target.value))} />
+          </div>
+          <div className="field" style={{ flex: 1 }}>
+            <label className="field-label">Cycle length (days)</label>
+            <input
+              className="field-input"
+              type="number"
+              min="1"
+              max="365"
+              placeholder="Monthly"
+              value={cycleDays}
+              onChange={e => setCycleDays(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="field">
