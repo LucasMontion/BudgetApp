@@ -42,5 +42,16 @@ export const THEMES = [
 ]
 
 export function getTheme(id) {
+  if (id?.startsWith('custom_')) {
+    const color = id.replace('custom_', '')
+    return {
+      id,
+      name: 'Custom',
+      primary: color,
+      dark: color,
+      bg: `${color}11`,
+      gradient: color
+    }
+  }
   return THEMES.find(t => t.id === id) ?? THEMES[0]
 }

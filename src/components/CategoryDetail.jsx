@@ -12,11 +12,14 @@ function fmtMoney(n) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
-function EditItemSheet({ item, color, onSave, onDelete, onClose }) {
+function EditItemSheet({ item, color, sectionKey, onSave, onDelete, onClose }) {
   const [name, setName] = useState(item.name)
   const [amount, setAmount] = useState(item.amount ? String(item.amount) : '')
+  const [dueDay, setDueDay] = useState(item.dueDay ? String(item.dueDay) : '')
+  const [dueCycleDays, setDueCycleDays] = useState(item.dueCycleDays ? String(item.dueCycleDays) : '')
   const [pendingDelete, setPendingDelete] = useState(false)
   const nameRef = useRef(null)
+  const isBills = sectionKey === 'bills'
 
   useEffect(() => { nameRef.current?.focus() }, [])
 
@@ -72,6 +75,34 @@ function EditItemSheet({ item, color, onSave, onDelete, onClose }) {
           </div>
         </div>
 
+        {isBills && (
+          <div className="edit-txn-sheet__field">
+            <p className="edit-txn-sheet__label">Due date <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>(optional)</span></p>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: 4 }}>Day of month</p>
+                <input
+                  className="edit-txn-sheet__input"
+                  type="number" min="1" max="31"
+                  placeholder="e.g. 15"
+                  value={dueDay}
+                  onChange={e => setDueDay(e.target.value)}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: 4 }}>Every N days</p>
+                <input
+                  className="edit-txn-sheet__input"
+                  type="number" min="1"
+                  placeholder="monthly"
+                  value={dueCycleDays}
+                  onChange={e => setDueCycleDays(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="edit-txn-sheet__actions">
           {pendingDelete ? (
             <>
@@ -91,7 +122,7 @@ function EditItemSheet({ item, color, onSave, onDelete, onClose }) {
               <button
                 className="edit-txn-sheet__btn-save"
                 style={{ background: canSave ? color : undefined }}
-                onClick={() => onSave({ name: name.trim(), amount })}
+                onClick={() => onSave({ name: name.trim(), amount, dueDay: parseInt(dueDay) || null, dueCycleDays: parseInt(dueCycleDays) || null })}
                 disabled={!canSave}
               >
                 Save
@@ -104,16 +135,16 @@ function EditItemSheet({ item, color, onSave, onDelete, onClose }) {
   )
 }
 
-export function CategoryDetail({ budget, sectionKey, sectionLabel, onBack, onAddTransaction, onAddItem, onUpdateItem, onDeleteItem, onOpenSubcategory }) {
+export function CategoryDetail({ budget, sectionKey, sectionLabel, onBack, onUpdateBudget, onAddTransaction, onAddItem, onUpdateItem, onDeleteItem, onOpenSubcategory }) {
   const [showForm, setShowForm]   = useState(false)
   const [newName, setNewName]     = useState('')
   const [newAmount, setNewAmount] = useState('')
   const [nameErr, setNameErr]     = useState(false)
   const [editingItem, setEditingItem] = useState(null)
 
-  const color    = SECTION_COLORS[sectionKey] ?? '#6366f1'
-  const isIncome = sectionKey === 'income'
   const sections = budget.sections || {}
+  const color    = sections[sectionKey]?.color ?? SECTION_COLORS[sectionKey] ?? '#6366f1'
+  const isIncome = sectionKey === 'income'
   const rawItems = sections[sectionKey]?.items || []
   const transactions = budget.transactions || []
 
@@ -141,6 +172,20 @@ export function CategoryDetail({ budget, sectionKey, sectionLabel, onBack, onAdd
     setNameErr(false)
   }
 
+  function handleUpdateColor(newColor) {
+    if (onUpdateBudget) {
+      onUpdateBudget({
+        sections: {
+          ...sections,
+          [sectionKey]: {
+            ...sections[sectionKey],
+            color: newColor
+          }
+        }
+      })
+    }
+  }
+
   return (
     <div className="screen catdetail">
       {/* Header */}
@@ -151,7 +196,20 @@ export function CategoryDetail({ budget, sectionKey, sectionLabel, onBack, onAdd
           </svg>
         </button>
         <h1 className="catdetail__title">{sectionLabel}</h1>
-        <div style={{ width: 38 }} />
+        <div style={{ width: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <label style={{ cursor: 'pointer', display: 'flex' }} aria-label="Edit Color">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            <input 
+              type="color" 
+              value={color}
+              onChange={e => handleUpdateColor(e.target.value)}
+              style={{ opacity: 0, position: 'absolute', width: 0, height: 0, padding: 0, border: 0 }}
+            />
+          </label>
+        </div>
       </header>
 
       {/* Summary bar */}
@@ -275,6 +333,7 @@ export function CategoryDetail({ budget, sectionKey, sectionLabel, onBack, onAdd
         <EditItemSheet
           item={editingItem}
           color={color}
+          sectionKey={sectionKey}
           onSave={updates => { onUpdateItem(editingItem.id, updates); setEditingItem(null) }}
           onDelete={() => { onDeleteItem(editingItem.id); setEditingItem(null) }}
           onClose={() => setEditingItem(null)}

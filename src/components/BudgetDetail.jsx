@@ -65,7 +65,11 @@ function MiniDonut({ title, total, items = [], actualsMap = null }) {
   )
 }
 
-function CategoryBreakdownTabs({ sectionRows, sections, transactions, incomeTotal, incomeActual }) {
+function getSectionColor(budget, key) {
+  return budget?.sections?.[key]?.color ?? SECTION_COLORS[key] ?? '#6366F1'
+}
+
+function CategoryBreakdownTabs({ budget, sectionRows, sections, transactions, incomeTotal, incomeActual }) {
   const scrollRef = useRef(null)
   const [activeTab, setActiveTab] = useState(sectionRows[0]?.key)
 
@@ -100,7 +104,7 @@ function CategoryBreakdownTabs({ sectionRows, sections, transactions, incomeTota
               padding: '6px 12px',
               borderRadius: 20,
               border: 'none',
-              background: activeTab === r.key ? SECTION_COLORS[r.key] : 'var(--border)',
+              background: activeTab === r.key ? getSectionColor(budget, r.key) : 'var(--border)',
               color: activeTab === r.key ? '#fff' : 'var(--text)',
               fontWeight: 600,
               fontSize: '0.85rem',
@@ -376,7 +380,7 @@ function SpendingLineChart({ budget, periodOffset = 0, sectionKeys = ['bills', '
 }
 
 function EditSheet({ txn, budget, onSave, onDelete, onClose }) {
-  const color = SECTION_COLORS[txn.sectionKey] ?? '#6366F1'
+  const color = getSectionColor(budget, txn.sectionKey)
   const sectionItems = budget.sections?.[txn.sectionKey]?.items?.filter(i => i.name.trim()) || []
   const cards = (budget.trackCards ?? false) ? (budget.cards || []) : []
 
@@ -670,7 +674,7 @@ export function BudgetDetail({ budget, onBack, onUpdateBudget, onUpdateTransacti
             {sectionRows.map(({ key, label, total, actual }) => (
               <div key={key} className="bdetail__row" style={{ paddingTop: '12px' }}>
                 <span className="bdetail__key" style={{ flex: 1 }}>
-                  <span className="bdetail__dot" style={{ background: SECTION_COLORS[key] }} />
+                  <span className="bdetail__dot" style={{ background: getSectionColor(budget, key) }} />
                   {label}
                 </span>
                 <div style={{ display: 'flex', gap: '16px', textAlign: 'right' }}>
@@ -702,14 +706,14 @@ export function BudgetDetail({ budget, onBack, onUpdateBudget, onUpdateTransacti
         <SpendingTrendSlider budget={budget} periodOffset={periodOffset} />
 
         {/* Breakdown charts */}
-        <CategoryBreakdownTabs 
+        <CategoryBreakdownTabs
+          budget={budget}
           sectionRows={sectionRows}
           sections={sections}
           transactions={currentPeriodTxns}
           incomeTotal={incomeTotal}
           incomeActual={incomeActual}
-        />
-          
+        />          
       </div>
 
       {editingTxn && (

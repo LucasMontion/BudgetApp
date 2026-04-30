@@ -35,7 +35,10 @@ export function AddTransaction({ budget, initialSectionKey, initialSubcategory, 
   const [kbHeight, setKbHeight] = useState(0)
   const [kbOpen, setKbOpen] = useState(false)
 
-  const category = CATEGORY_META[catKey]
+  const category = {
+    ...CATEGORY_META[catKey],
+    color: budget.sections?.[catKey]?.color ?? CATEGORY_META[catKey].color
+  }
   const sectionItems = sections[catKey]?.items?.filter(i => i.name.trim()) || []
 
   useEffect(() => {
@@ -175,7 +178,10 @@ export function AddTransaction({ budget, initialSectionKey, initialSubcategory, 
           <p className="add-txn__section-label">Category</p>
           <div className="cat-selector">
             {available.map(key => {
-              const m = CATEGORY_META[key]
+              const m = {
+                ...CATEGORY_META[key],
+                color: budget.sections?.[key]?.color ?? CATEGORY_META[key].color
+              }
               const active = catKey === key
               return (
                 <button
@@ -213,7 +219,7 @@ export function AddTransaction({ budget, initialSectionKey, initialSubcategory, 
             ))}
           </div>
         </div>
-        {cards.length > 0 && (
+        {cards.length > 0 && catKey !== 'income' && catKey !== 'savings' && (
           <div className="add-txn__section">
             <p className="add-txn__section-label">Charged to card (optional)</p>
             <div className="add-txn__chips">

@@ -156,7 +156,7 @@ export function TransactionList({ budget, sectionKey, sectionLabel, subcategoryN
     .sort((a, b) => new Date(b.date) - new Date(a.date))
 
   const title = subcategoryName ?? sectionLabel
-  const color = SECTION_COLORS[sectionKey] ?? '#6366f1'
+  const color = budget.sections?.[sectionKey]?.color ?? SECTION_COLORS[sectionKey] ?? '#6366f1'
 
   function handleSave(updates) {
     onUpdateTransaction(editingTxn.id, updates)

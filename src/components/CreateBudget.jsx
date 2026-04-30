@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { THEMES } from '../themes'
+import { THEMES, getTheme } from '../themes'
 import { CARD_COLORS } from './CardsList'
 
 function createId() {
@@ -8,7 +8,7 @@ function createId() {
 }
 
 function newItem() {
-  return { id: createId(), name: '', amount: '' }
+  return { id: createId(), name: '', amount: '', dueDay: '', dueCycleDays: '' }
 }
 
 export function CreateBudget({ onCreate, onCancel }) {
@@ -42,7 +42,7 @@ export function CreateBudget({ onCreate, onCancel }) {
     savings:  [newItem()],
   })
 
-  const theme = THEMES.find(t => t.id === themeId)
+  const theme = getTheme(themeId)
   const isProject = budgetType === 'project'
   const hasCardsStep = !isProject && trackCards
   const stepLabels = hasCardsStep
@@ -283,6 +283,31 @@ function StepDetails({ name, setName, nameError, themeId, setThemeId, theme, onN
               )}
             </button>
           ))}
+          <label 
+            className={`theme-swatch${themeId?.startsWith('custom_') ? ' theme-swatch--active' : ''}`}
+            style={{ cursor: 'pointer' }}
+          >
+            <span className="theme-swatch__color" style={{ background: themeId?.startsWith('custom_') ? theme.gradient : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={themeId?.startsWith('custom_') ? '#fff' : '#6b7280'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </span>
+            <span className="theme-swatch__name">Custom</span>
+            <input 
+              type="color" 
+              value={themeId?.startsWith('custom_') ? theme.primary : '#3B82F6'}
+              onChange={e => setThemeId(`custom_${e.target.value}`)}
+              style={{ opacity: 0, position: 'absolute', width: 0, height: 0, padding: 0, border: 0 }}
+            />
+            {themeId?.startsWith('custom_') && (
+              <span className="theme-swatch__check">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+            )}
+          </label>
         </div>
       </div>
 
@@ -503,6 +528,7 @@ function StepItems({ isProject, includeIncome, includeSavings, items, addItem, r
             onRemove={id => removeItem('bills', id)}
             onUpdate={(id, f, v) => updateItem('bills', id, f, v)}
             addLabel="Add bill"
+            isBills
             nested
           />
 
@@ -539,7 +565,7 @@ function StepItems({ isProject, includeIncome, includeSavings, items, addItem, r
   )
 }
 
-function ItemSection({ label, sublabel, accent, items, onAdd, onRemove, onUpdate, addLabel, nested }) {
+function ItemSection({ label, sublabel, accent, items, onAdd, onRemove, onUpdate, addLabel, isBills, nested }) {
   return (
     <div className={`items-section${nested ? ' items-section--nested' : ''}`}>
       <div className="items-section__header">
@@ -552,36 +578,59 @@ function ItemSection({ label, sublabel, accent, items, onAdd, onRemove, onUpdate
 
       <div className="items-section__rows">
         {items.map((item, idx) => (
-          <div key={item.id} className="item-row">
-            <input
-              className="item-row__name"
-              type="text"
-              placeholder={`Item ${idx + 1}`}
-              value={item.name}
-              onChange={e => onUpdate(item.id, 'name', e.target.value)}
-              autoComplete="off"
-            />
-            <div className="item-row__amount-wrap">
-              <span className="item-row__currency">$</span>
+          <div key={item.id} className="item-row-wrap">
+            <div className="item-row">
               <input
-                className="item-row__amount"
+                className="item-row__name"
                 type="text"
-                inputMode="decimal"
-                placeholder="Expected"
-                value={item.amount}
-                onChange={e => onUpdate(item.id, 'amount', e.target.value)}
+                placeholder={`Item ${idx + 1}`}
+                value={item.name}
+                onChange={e => onUpdate(item.id, 'name', e.target.value)}
+                autoComplete="off"
               />
+              <div className="item-row__amount-wrap">
+                <span className="item-row__currency">$</span>
+                <input
+                  className="item-row__amount"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Expected"
+                  value={item.amount}
+                  onChange={e => onUpdate(item.id, 'amount', e.target.value)}
+                />
+              </div>
+              <button
+                className="item-row__remove"
+                onClick={() => onRemove(item.id)}
+                aria-label="Remove"
+                disabled={items.length === 1}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
-            <button
-              className="item-row__remove"
-              onClick={() => onRemove(item.id)}
-              aria-label="Remove"
-              disabled={items.length === 1}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            {isBills && (
+              <div className="item-row-due">
+                <span className="item-row-due__label">Due day</span>
+                <input
+                  className="item-row-due__input"
+                  type="number" min="1" max="31"
+                  placeholder="–"
+                  value={item.dueDay}
+                  onChange={e => onUpdate(item.id, 'dueDay', e.target.value)}
+                />
+                <span className="item-row-due__label">every</span>
+                <input
+                  className="item-row-due__input"
+                  type="number" min="1"
+                  placeholder="monthly"
+                  value={item.dueCycleDays}
+                  onChange={e => onUpdate(item.id, 'dueCycleDays', e.target.value)}
+                />
+                <span className="item-row-due__label">days</span>
+              </div>
+            )}
           </div>
         ))}
       </div>

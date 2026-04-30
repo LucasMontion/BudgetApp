@@ -8,6 +8,7 @@ import { TransactionList } from './components/TransactionList'
 import { BudgetDetail } from './components/BudgetDetail'
 import { AuthScreen } from './components/AuthScreen'
 import { CardDetail } from './components/CardDetail'
+import { BudgetCalendar } from './components/BudgetCalendar'
 import { useBudgets } from './hooks/useBudgets'
 import { useAuth } from './contexts/AuthContext'
 import './App.css'
@@ -128,10 +129,12 @@ export default function App() {
       {screen === 'overview' && activeBudget && (
         <BudgetOverview
           budget={activeBudget}
+          onUpdateBudget={(updates) => updateBudget(activeBudgetId, updates)}
           onBack={() => setScreen('dashboard')}
           onOpenCategory={handleOpenCategory}
           onAddTransaction={() => openAddTxn(null)}
           onOpenDetail={() => setScreen('detail')}
+          onOpenCalendar={() => setScreen('calendar')}
           onOpenCardDetail={cardId => { setActiveCardId(cardId); setScreen('cardDetail') }}
           onAddCard={card => addCard(activeBudgetId, card)}
           onUpdateCard={(cardId, updates) => updateCard(activeBudgetId, cardId, updates)}
@@ -151,6 +154,13 @@ export default function App() {
         />
       )}
 
+      {screen === 'calendar' && activeBudget && (
+        <BudgetCalendar
+          budget={activeBudget}
+          onBack={() => setScreen('overview')}
+        />
+      )}
+
       {screen === 'detail' && activeBudget && (
         <BudgetDetail
           budget={activeBudget}
@@ -167,6 +177,7 @@ export default function App() {
           sectionKey={activeSection.key}
           sectionLabel={activeSection.label}
           onBack={() => setScreen('overview')}
+          onUpdateBudget={(updates) => updateBudget(activeBudgetId, updates)}
           onAddTransaction={() => openAddTxn(activeSection.key)}
           onAddItem={handleAddItem}
           onUpdateItem={(itemId, updates) => updateBudgetItem(activeBudgetId, activeSection.key, itemId, updates)}

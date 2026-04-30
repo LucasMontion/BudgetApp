@@ -208,12 +208,27 @@ export function ManageCardSheet({ existing, onSave, onClose }) {
             {CARD_COLORS.map(c => (
               <button
                 key={c.id}
-                className={`card-color-swatch${color === c.hex ? ' card-color-swatch--active' : ''}`}
+                className={`card-color-swatch${color.toLowerCase() === c.hex.toLowerCase() ? ' card-color-swatch--active' : ''}`}
                 style={{ background: c.hex }}
                 onClick={() => setColor(c.hex)}
                 aria-label={c.id}
               />
             ))}
+            <label 
+              className={`card-color-swatch${!CARD_COLORS.find(c => c.hex.toLowerCase() === color.toLowerCase()) ? ' card-color-swatch--active' : ''}`}
+              style={{ background: !CARD_COLORS.find(c => c.hex.toLowerCase() === color.toLowerCase()) ? color : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={!CARD_COLORS.find(c => c.hex.toLowerCase() === color.toLowerCase()) ? '#fff' : '#6b7280'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              <input 
+                type="color" 
+                value={color}
+                onChange={e => setColor(e.target.value)}
+                style={{ opacity: 0, position: 'absolute', width: 0, height: 0, padding: 0, border: 0 }}
+              />
+            </label>
           </div>
         </div>
 

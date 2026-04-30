@@ -118,7 +118,7 @@ export function getPeriodLabel(recurrence, offset, opts = {}) {
 }
 
 // ── Component ────────────────────────────────────────────────────────
-export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransaction, onOpenDetail, onOpenCardDetail, onAddCard, onUpdateCard, onDeleteCard }) {
+export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransaction, onOpenDetail, onOpenCalendar, onOpenCardDetail, onAddCard, onUpdateCard, onDeleteCard }) {
   const [expensesOpen, setExpensesOpen] = useState(false)
   const [periodOffset, setPeriodOffset] = useState(0)
 
@@ -149,6 +149,13 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
   const savingsActual  = sumTransactions(transactions, 'savings')
   const expensesActual = billsActual + variableActual
 
+  const secColors = {
+    income: sections.income?.color ?? '#10B981',
+    bills: sections.bills?.color ?? '#EF4444',
+    variable: sections.variable?.color ?? '#F97316',
+    savings: sections.savings?.color ?? '#8B5CF6',
+  }
+
   const hasIncome  = sections.income?.enabled
   const hasSavings = sections.savings?.enabled
 
@@ -166,12 +173,20 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
             {isProject ? 'Project' : 'Daily Life'}
           </span>
         </div>
-        <button className="ov-back-btn" onClick={onOpenDetail} aria-label="Budget details">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-            <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-          </svg>
-        </button>
+        <div style={{ display: 'flex', gap: 2 }}>
+          <button className="ov-back-btn" onClick={onOpenCalendar} aria-label="Calendar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+          </button>
+          <button className="ov-back-btn" onClick={onOpenDetail} aria-label="Budget details">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       {isRecurrent && (
@@ -209,8 +224,8 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
         {hasIncome && (
           <CategoryPanel
             label="Income"
-            color="#10B981"
-            dashColor="rgba(16,185,129,.5)"
+            color={secColors.income}
+            dashColor={`${secColors.income}80`}
             actual={incomeActual}
             total={incomeTotal}
             onTap={() => onOpenCategory('income', 'Income')}
@@ -220,8 +235,8 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
         {isProject ? (
           <CategoryPanel
             label="Expenses"
-            color="#F97316"
-            dashColor="rgba(249,115,22,.5)"
+            color={secColors.variable}
+            dashColor={`${secColors.variable}80`}
             actual={variableActual}
             total={variableTotal}
             onTap={() => onOpenCategory('variable', 'Expenses')}
@@ -229,18 +244,28 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
         ) : (
           <CategoryPanel
             label="Expenses"
-            color="#F43F5E"
-            dashColor="rgba(244,63,94,.5)"
+            color={budget.sections?.expenses?.color || "#F43F5E"}
+            dashColor={budget.sections?.expenses?.color ? `${budget.sections.expenses.color}80` : "rgba(244,63,94,.5)"}
             actual={expensesActual}
             total={expensesTotal}
             expandable
             expanded={expensesOpen}
             onTap={() => setExpensesOpen(o => !o)}
+            onColorChange={(color) => {
+              if (onUpdateBudget) {
+                onUpdateBudget({
+                  sections: {
+                    ...(budget.sections || {}),
+                    expenses: { ...(budget.sections?.expenses || {}), color }
+                  }
+                })
+              }
+            }}
           >
             <SubCard
               label="Bills"
               sublabel="Fixed expenses"
-              color="#EF4444"
+              color={secColors.bills}
               actual={billsActual}
               total={billsTotal}
               onTap={() => onOpenCategory('bills', 'Bills')}
@@ -248,7 +273,7 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
             <SubCard
               label="Variable Expenses"
               sublabel="Day-to-day"
-              color="#F97316"
+              color={secColors.variable}
               actual={variableActual}
               total={variableTotal}
               onTap={() => onOpenCategory('variable', 'Variable Expenses')}
@@ -259,8 +284,8 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
         {hasSavings && (
           <CategoryPanel
             label="Savings"
-            color="#8B5CF6"
-            dashColor="rgba(139,92,246,.5)"
+            color={secColors.savings}
+            dashColor={`${secColors.savings}80`}
             actual={savingsActual}
             total={savingsTotal}
             onTap={() => onOpenCategory('savings', 'Savings')}
@@ -281,7 +306,7 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
   )
 }
 
-function CategoryPanel({ label, color, dashColor, actual, total, onTap, expandable, expanded, children }) {
+function CategoryPanel({ label, color, dashColor, actual, total, onTap, expandable, expanded, onColorChange, children }) {
   const pctDisplay = total > 0 ? Math.round((actual / total) * 100) : 0
   const pctFill = Math.min(100, pctDisplay)
 
@@ -290,8 +315,24 @@ function CategoryPanel({ label, color, dashColor, actual, total, onTap, expandab
       className={`cat-panel${expanded ? ' cat-panel--expanded' : ''}`}
       style={{ '--color': color, '--dash': dashColor }}
     >
-      <button className="cat-panel__card" onClick={onTap} aria-expanded={expandable ? expanded : undefined}>
-        <span className="cat-panel__label">{label}</span>
+      <div className="cat-panel__card" onClick={onTap} aria-expanded={expandable ? expanded : undefined} role="button" tabIndex={0}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+          <span className="cat-panel__label">{label}</span>
+          {onColorChange && (
+            <label onClick={e => e.stopPropagation()} style={{ cursor: 'pointer', display: 'flex', color: 'rgba(255,255,255,0.75)' }} aria-label="Edit Color">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              <input 
+                type="color" 
+                value={color}
+                onChange={e => onColorChange(e.target.value)}
+                style={{ opacity: 0, position: 'absolute', width: 0, height: 0, padding: 0, border: 0 }}
+              />
+            </label>
+          )}
+        </div>
         <span className="cat-panel__amount">${fmtMoney(actual)}</span>
         {total > 0 && (
           <div className="cat-panel__track">
@@ -310,7 +351,7 @@ function CategoryPanel({ label, color, dashColor, actual, total, onTap, expandab
             </svg>
           )}
         </div>
-      </button>
+      </div>
 
       {expandable && expanded && (
         <div className="cat-panel__sub">

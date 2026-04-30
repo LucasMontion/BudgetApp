@@ -179,7 +179,7 @@ export function useBudgets(user) {
     }))
   }
 
-  function updateBudgetItem(budgetId, sectionKey, itemId, { name, amount }) {
+  function updateBudgetItem(budgetId, sectionKey, itemId, { name, amount, dueDay, dueCycleDays }) {
     setBudgets(prev => prev.map(b => {
       if (b.id !== budgetId) return b
       const section = b.sections?.[sectionKey] ?? { enabled: true, items: [] }
@@ -193,7 +193,7 @@ export function useBudgets(user) {
           [sectionKey]: {
             ...section,
             items: section.items.map(i =>
-              i.id === itemId ? { ...i, name: newName, amount: amount ?? i.amount } : i
+              i.id === itemId ? { ...i, name: newName, amount: amount ?? i.amount, dueDay: dueDay ?? i.dueDay ?? null, dueCycleDays: dueCycleDays ?? i.dueCycleDays ?? null } : i
             ),
           },
         },
