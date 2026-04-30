@@ -67,21 +67,29 @@ export function CardsPanel({ budget, onOpenCard, onAddCard, onUpdateCard, onDele
           <CreditCardIcon />
           <span className="cards-panel__title">Credit Cards</span>
         </div>
-        <button className="cards-panel__add-btn" onClick={() => setAddOpen(true)} aria-label="Add card">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
       </div>
 
       {cards.length === 0 ? (
-        <p className="cards-panel__empty">No cards yet — tap + to add one</p>
+        <button className="cards-panel__add-first" onClick={() => setAddOpen(true)}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add your first card
+        </button>
       ) : (
-        <div className="cards-panel__list">
-          {cards.map(card => (
-            <CardSummaryRow key={card.id} card={card} budget={budget} onOpen={() => onOpenCard(card.id)} />
-          ))}
-        </div>
+        <>
+          <div className="cards-panel__list">
+            {cards.map(card => (
+              <CardSummaryRow key={card.id} card={card} budget={budget} onOpen={() => onOpenCard(card.id)} />
+            ))}
+          </div>
+          <button className="cards-panel__add-another" onClick={() => setAddOpen(true)}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add card
+          </button>
+        </>
       )}
 
       {addOpen && (
@@ -108,13 +116,13 @@ function CardSummaryRow({ card, budget, onOpen }) {
     .filter(p => { const d = new Date(p.date); return d >= currentStart && d <= currentEnd })
     .reduce((s, p) => s + p.amount, 0)
 
-  const prevCharged    = cardTxns.filter(t => new Date(t.date) < currentStart).reduce((s, t) => s + t.amount, 0)
-  const prevPaid       = cardPayments.filter(p => new Date(p.date) < currentStart).reduce((s, p) => s + p.amount, 0)
-  const carriedBalance = Math.max(0, prevCharged - prevPaid)
+  const prevCharged = cardTxns.filter(t => new Date(t.date) < currentStart).reduce((s, t) => s + t.amount, 0)
+  const prevPaid    = cardPayments.filter(p => new Date(p.date) < currentStart).reduce((s, p) => s + p.amount, 0)
+  const prevNet     = prevCharged - prevPaid
 
-  const totalBase = carriedBalance + currentTotal
-  const stillOwed = Math.max(0, totalBase - totalPaid)
-  const paidPct   = totalBase > 0 ? Math.min(100, Math.round((totalPaid / totalBase) * 100)) : 0
+  const totalBase = Math.max(0, prevNet) + currentTotal
+  const stillOwed = Math.max(0, prevNet + currentTotal - totalPaid)
+  const paidPct   = totalBase > 0 ? Math.min(100, Math.round(((totalPaid - Math.min(0, prevNet)) / totalBase) * 100)) : 0
   const daysClose = daysUntil(currentEnd)
   const isUrgent  = daysClose <= 3 && stillOwed > 0
 

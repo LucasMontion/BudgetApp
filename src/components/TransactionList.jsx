@@ -12,9 +12,11 @@ function EditSheet({ txn, budget, sectionKey, color, onSave, onDelete, onClose }
   const [memo, setMemo] = useState(txn.memo || '')
   const [dateStr, setDateStr] = useState(new Date(txn.date).toISOString().slice(0, 10))
   const [selectedSub, setSelectedSub] = useState(txn.subcategoryName)
+  const [selectedCardId, setSelectedCardId] = useState(txn.cardId ?? null)
   const [pendingDelete, setPendingDelete] = useState(false)
 
   const sectionItems = budget.sections?.[sectionKey]?.items?.filter(i => i.name.trim()) || []
+  const cards = (budget.trackCards ?? false) ? (budget.cards || []) : []
 
   function handleAmountChange(e) {
     let v = e.target.value.replace(/[^0-9.]/g, '')
@@ -28,7 +30,7 @@ function EditSheet({ txn, budget, sectionKey, color, onSave, onDelete, onClose }
   function handleSave() {
     const amount = parseFloat(digits)
     if (!amount || amount <= 0 || !selectedSub) return
-    onSave({ amount, memo: memo.trim(), date: new Date(dateStr + 'T12:00:00').toISOString(), subcategoryName: selectedSub })
+    onSave({ amount, memo: memo.trim(), date: new Date(dateStr + 'T12:00:00').toISOString(), subcategoryName: selectedSub, cardId: selectedCardId })
   }
 
   const canSave = parseFloat(digits) > 0 && !!selectedSub
@@ -72,6 +74,25 @@ function EditSheet({ txn, budget, sectionKey, color, onSave, onDelete, onClose }
                   onClick={() => setSelectedSub(item.name)}
                 >
                   {item.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {cards.length > 0 && (
+          <div className="edit-txn-sheet__field">
+            <p className="edit-txn-sheet__label">Charged to card</p>
+            <div className="edit-txn-sheet__chips">
+              {cards.map(card => (
+                <button
+                  key={card.id}
+                  className={`atxn-chip${selectedCardId === card.id ? ' atxn-chip--active' : ''}`}
+                  style={{ '--chip-color': card.color }}
+                  onClick={() => setSelectedCardId(id => id === card.id ? null : card.id)}
+                >
+                  <span className="atxn-chip__dot" style={{ background: card.color, opacity: selectedCardId === card.id ? 0 : 1 }} />
+                  {card.name}
                 </button>
               ))}
             </div>

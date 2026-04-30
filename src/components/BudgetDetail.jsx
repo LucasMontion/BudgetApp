@@ -193,7 +193,39 @@ function CategoryBreakdownTabs({ sectionRows, sections, transactions, incomeTota
   )
 }
 
-function SpendingLineChart({ budget, periodOffset = 0 }) {
+function SpendingTrendSlider({ budget, periodOffset = 0 }) {
+  const [activeSlide, setActiveSlide] = useState(0)
+  const sliderRef = useRef(null)
+
+  function handleScroll() {
+    if (!sliderRef.current) return
+    const { scrollLeft, offsetWidth } = sliderRef.current
+    setActiveSlide(Math.round(scrollLeft / offsetWidth))
+  }
+
+  return (
+    <div className="bdetail__group">
+      <div
+        ref={sliderRef}
+        className="trend-slider"
+        onScroll={handleScroll}
+      >
+        <div className="trend-slide">
+          <SpendingLineChart budget={budget} periodOffset={periodOffset} sectionKeys={['bills', 'variable']} label="Spending Trend" color="#F97316" />
+        </div>
+        <div className="trend-slide">
+          <SpendingLineChart budget={budget} periodOffset={periodOffset} sectionKeys={['bills']} label="Bills Trend" color="#EF4444" />
+        </div>
+      </div>
+      <div className="trend-dots">
+        <div className={`trend-dot${activeSlide === 0 ? ' trend-dot--active' : ''}`} />
+        <div className={`trend-dot${activeSlide === 1 ? ' trend-dot--active' : ''}`} />
+      </div>
+    </div>
+  )
+}
+
+function SpendingLineChart({ budget, periodOffset = 0, sectionKeys = ['bills', 'variable'], label = 'Spending Trend', color = '#F97316' }) {
   const [activeIdx, setActiveIdx] = useState(null)
   const svgRef = useRef(null)
 
@@ -217,46 +249,40 @@ function SpendingLineChart({ budget, periodOffset = 0 }) {
     }
   }
 
-  // Filter to only expenses (bills and variable)
-  const spending = transactions.filter(t => t.sectionKey === 'bills' || t.sectionKey === 'variable')
-  if (spending.length === 0) return null
-
   const grouped = {}
-  spending.forEach(t => {
-    const dateKey = t.date.slice(0, 10) // Group by ISO date (YYYY-MM-DD)
+  transactions.filter(t => sectionKeys.includes(t.sectionKey)).forEach(t => {
+    const dateKey = t.date.slice(0, 10)
     grouped[dateKey] = (grouped[dateKey] || 0) + (parseFloat(t.amount) || 0)
   })
 
-  const sortedDates = Object.keys(grouped).sort()
-  if (sortedDates.length === 0) return null
-  
-  if (sortedDates.length === 1 && !periodStart && !budget.createdAt) {
-    // Add a zero-point the day before to make it draw a flat line
-    const d = new Date(sortedDates[0] + 'T12:00:00')
-    d.setDate(d.getDate() - 1)
-    const prev = d.toISOString().slice(0, 10)
-    grouped[prev] = 0
-    sortedDates.unshift(prev)
+  const today = new Date()
+  today.setHours(12, 0, 0, 0)
+
+  // Determine the date window — always show even with no data
+  let minDate, maxDate
+  if (isRecurrent && periodStart) {
+    minDate = new Date(periodStart)
+    minDate.setHours(12, 0, 0, 0)
+    maxDate = today <= periodEnd ? today : new Date(periodEnd)
+    maxDate.setHours(12, 0, 0, 0)
+  } else {
+    const created = budget.createdAt ? new Date(budget.createdAt) : new Date(today)
+    created.setHours(12, 0, 0, 0)
+    minDate = created
+    maxDate = today
   }
 
-  let minDate = new Date(sortedDates[0] + 'T12:00:00')
-  let maxDate = new Date(sortedDates[sortedDates.length - 1] + 'T12:00:00')
+  // Extend to cover any transactions outside the window
+  Object.keys(grouped).sort().forEach(iso => {
+    const d = new Date(iso + 'T12:00:00')
+    if (d < minDate) minDate = d
+    if (d > maxDate) maxDate = d
+  })
 
-  if (isRecurrent && periodStart) {
-    const pStart = new Date(periodStart)
-    pStart.setHours(12, 0, 0, 0)
-    if (pStart < minDate) minDate = pStart
-    
-    // Optional: extend to today if we are within the period
-    const today = new Date()
-    today.setHours(12, 0, 0, 0)
-    if (today > maxDate && today <= periodEnd) {
-      maxDate = today
-    }
-  } else if (!isRecurrent && budget.createdAt) {
-    const created = new Date(budget.createdAt)
-    created.setHours(12, 0, 0, 0)
-    if (created < minDate) minDate = created
+  // Need at least 2 points to draw a line
+  if (minDate >= maxDate) {
+    maxDate = new Date(minDate)
+    maxDate.setDate(minDate.getDate() + 1)
   }
   
   const filledData = []
@@ -300,10 +326,12 @@ function SpendingLineChart({ budget, periodOffset = 0 }) {
 
   const activePoint = activeIdx !== null ? pointsData[activeIdx] : null
 
+  const gradId = `lineGrad-${sectionKeys.join('-')}`
+
   return (
-    <div className="bdetail__group">
+    <div style={{ padding: '16px 0 4px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 4 }}>
-        <p className="bdetail__group-label" style={{ color: '#F97316', margin: 0 }}>Spending Trend</p>
+        <p className="bdetail__group-label" style={{ color, margin: 0 }}>{label}</p>
         {activePoint && (
           <div style={{ fontSize: '0.85rem', color: 'var(--text)', textAlign: 'right', lineHeight: 1.2 }}>
             <div style={{ fontWeight: 600 }}>${activePoint.total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
@@ -312,10 +340,10 @@ function SpendingLineChart({ budget, periodOffset = 0 }) {
         )}
       </div>
       <div className="bdetail__card bdetail__line-card" style={{ position: 'relative' }}>
-        <svg 
+        <svg
           ref={svgRef}
-          viewBox="0 0 100 40" 
-          preserveAspectRatio="none" 
+          viewBox="0 0 100 40"
+          preserveAspectRatio="none"
           className="bdetail__line-svg"
           onMouseMove={handlePointerMove}
           onTouchMove={handlePointerMove}
@@ -324,17 +352,17 @@ function SpendingLineChart({ budget, periodOffset = 0 }) {
           style={{ touchAction: 'pan-y' }}
         >
           <defs>
-            <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#F97316" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#F97316" stopOpacity="0" />
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+              <stop offset="100%" stopColor={color} stopOpacity="0" />
             </linearGradient>
           </defs>
-          <polygon points={areaPoints} fill="url(#lineGrad)" />
-          <polyline points={linePoints} fill="none" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <polygon points={areaPoints} fill={`url(#${gradId})`} />
+          <polyline points={linePoints} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           {activePoint && (
             <>
-              <line x1={activePoint.x} y1={0} x2={activePoint.x} y2={height} stroke="#F97316" strokeWidth="0.5" strokeDasharray="2" vectorEffect="non-scaling-stroke" />
-              <circle cx={activePoint.x} cy={activePoint.y} r="1.5" fill="var(--card)" stroke="#F97316" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              <line x1={activePoint.x} y1={0} x2={activePoint.x} y2={height} stroke={color} strokeWidth="0.5" strokeDasharray="2" vectorEffect="non-scaling-stroke" />
+              <circle cx={activePoint.x} cy={activePoint.y} r="1.5" fill="var(--card)" stroke={color} strokeWidth="1" vectorEffect="non-scaling-stroke" />
             </>
           )}
         </svg>
@@ -350,11 +378,13 @@ function SpendingLineChart({ budget, periodOffset = 0 }) {
 function EditSheet({ txn, budget, onSave, onDelete, onClose }) {
   const color = SECTION_COLORS[txn.sectionKey] ?? '#6366F1'
   const sectionItems = budget.sections?.[txn.sectionKey]?.items?.filter(i => i.name.trim()) || []
+  const cards = (budget.trackCards ?? false) ? (budget.cards || []) : []
 
   const [digits, setDigits] = useState(String(parseFloat(txn.amount)))
   const [memo, setMemo] = useState(txn.memo || '')
   const [dateStr, setDateStr] = useState(new Date(txn.date).toISOString().slice(0, 10))
   const [selectedSub, setSelectedSub] = useState(txn.subcategoryName)
+  const [selectedCardId, setSelectedCardId] = useState(txn.cardId ?? null)
   const [pendingDelete, setPendingDelete] = useState(false)
 
   function handleAmountChange(e) {
@@ -369,7 +399,7 @@ function EditSheet({ txn, budget, onSave, onDelete, onClose }) {
   function handleSave() {
     const amount = parseFloat(digits)
     if (!amount || amount <= 0 || !selectedSub) return
-    onSave({ amount, memo: memo.trim(), date: new Date(dateStr + 'T12:00:00').toISOString(), subcategoryName: selectedSub })
+    onSave({ amount, memo: memo.trim(), date: new Date(dateStr + 'T12:00:00').toISOString(), subcategoryName: selectedSub, cardId: selectedCardId })
   }
 
   const canSave = parseFloat(digits) > 0 && !!selectedSub
@@ -412,6 +442,25 @@ function EditSheet({ txn, budget, onSave, onDelete, onClose }) {
                   onClick={() => setSelectedSub(item.name)}
                 >
                   {item.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {cards.length > 0 && (
+          <div className="edit-txn-sheet__field">
+            <p className="edit-txn-sheet__label">Charged to card</p>
+            <div className="edit-txn-sheet__chips">
+              {cards.map(card => (
+                <button
+                  key={card.id}
+                  className={`atxn-chip${selectedCardId === card.id ? ' atxn-chip--active' : ''}`}
+                  style={{ '--chip-color': card.color }}
+                  onClick={() => setSelectedCardId(id => id === card.id ? null : card.id)}
+                >
+                  <span className="atxn-chip__dot" style={{ background: card.color, opacity: selectedCardId === card.id ? 0 : 1 }} />
+                  {card.name}
                 </button>
               ))}
             </div>
@@ -650,7 +699,7 @@ export function BudgetDetail({ budget, onBack, onUpdateBudget, onUpdateTransacti
         </div>
         
         {/* Spending Trend */}
-        <SpendingLineChart budget={budget} periodOffset={periodOffset} />
+        <SpendingTrendSlider budget={budget} periodOffset={periodOffset} />
 
         {/* Breakdown charts */}
         <CategoryBreakdownTabs 

@@ -42,14 +42,15 @@ export function CardDetail({ budget, cardId, onBack, onAddPayment, onDeletePayme
     .sort((a, b) => new Date(b.date) - new Date(a.date))
   const totalPaid = cyclePayments.reduce((s, p) => s + p.amount, 0)
 
-  // Carried balance: all charges before this cycle minus all payments before this cycle
-  const prevCharged  = cardTxns.filter(t => new Date(t.date) < currentStart).reduce((s, t) => s + t.amount, 0)
-  const prevPaid     = cardPayments.filter(p => new Date(p.date) < currentStart).reduce((s, p) => s + p.amount, 0)
-  const carriedBalance = Math.max(0, prevCharged - prevPaid)
+  // Net from all previous cycles (negative = credit carried forward)
+  const prevCharged    = cardTxns.filter(t => new Date(t.date) < currentStart).reduce((s, t) => s + t.amount, 0)
+  const prevPaid       = cardPayments.filter(p => new Date(p.date) < currentStart).reduce((s, p) => s + p.amount, 0)
+  const prevNet        = prevCharged - prevPaid
+  const carriedBalance = prevNet   // kept signed for correct maths; display guards against negative
 
-  const totalOwed  = Math.max(0, carriedBalance + currentTotal - totalPaid)
-  const totalBase  = carriedBalance + currentTotal
-  const paidPct    = totalBase > 0 ? Math.min(100, Math.round((totalPaid / totalBase) * 100)) : 0
+  const totalOwed  = Math.max(0, prevNet + currentTotal - totalPaid)
+  const totalBase  = Math.max(0, prevNet) + currentTotal
+  const paidPct    = totalBase > 0 ? Math.min(100, Math.round(((totalPaid - Math.min(0, prevNet)) / totalBase) * 100)) : 0
 
   const daysClose  = daysUntil(currentEnd)
   const isUrgent   = daysClose <= 3 && totalOwed > 0
@@ -107,6 +108,12 @@ export function CardDetail({ budget, cardId, onBack, onAddPayment, onDeletePayme
                 <div className="card-statement-card__row">
                   <span className="card-statement-card__key" style={{ color: '#F59E0B' }}>Carried from before</span>
                   <span className="card-statement-card__val" style={{ color: '#F59E0B' }}>${fmtMoney(carriedBalance)}</span>
+                </div>
+              )}
+              {carriedBalance < 0 && (
+                <div className="card-statement-card__row">
+                  <span className="card-statement-card__key" style={{ color: '#22C55E' }}>Credit from before</span>
+                  <span className="card-statement-card__val" style={{ color: '#22C55E' }}>−${fmtMoney(Math.abs(carriedBalance))}</span>
                 </div>
               )}
               <div className="card-statement-card__row">

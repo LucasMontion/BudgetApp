@@ -2424,6 +2424,38 @@ body {
   letter-spacing: .3px;
 }
 
+.trend-slider {
+  display: flex;
+  overflow-x: scroll;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 0;
+}
+.trend-slider::-webkit-scrollbar { display: none; }
+
+.trend-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+}
+
+.trend-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.trend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neutral-300);
+  transition: background .2s;
+}
+.trend-dot--active {
+  background: var(--text-secondary);
+}
+
 /* ══════════════════════════════════════
    Dashboard header actions
 ══════════════════════════════════════ */
@@ -2786,12 +2818,43 @@ body {
 }
 .cards-panel__add-btn:active { background: var(--neutral-200); }
 
-.cards-panel__empty {
-  font-size: 13px;
+.cards-panel__add-first {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1.5px dashed var(--border);
+  background: none;
   color: var(--text-secondary);
-  text-align: center;
-  padding: 8px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  -webkit-tap-highlight-color: transparent;
 }
+.cards-panel__add-first:active {
+  background: var(--neutral-100);
+  color: var(--text-primary);
+}
+
+.cards-panel__add-another {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cards-panel__add-another:active { color: var(--text-primary); }
 
 .cards-panel__list {
   display: flex;
@@ -2996,7 +3059,6 @@ body {
   height: 100%;
   border-radius: 99px;
   transition: width .5s cubic-bezier(.4,0,.2,1);
-  min-width: 4px;
 }
 
 .card-cycle-card__dates {
