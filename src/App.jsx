@@ -7,6 +7,7 @@ import { AddTransaction } from './components/AddTransaction'
 import { TransactionList } from './components/TransactionList'
 import { BudgetDetail } from './components/BudgetDetail'
 import { AuthScreen } from './components/AuthScreen'
+import { CardDetail } from './components/CardDetail'
 import { useBudgets } from './hooks/useBudgets'
 import { useAuth } from './contexts/AuthContext'
 import './App.css'
@@ -23,6 +24,7 @@ export default function App() {
   const [activeSubcategory, setActiveSubcategory]     = useState(null)
   const [darkMode, setDarkMode]                       = useState(() => localStorage.getItem('theme') === 'dark')
   const [accountSheetOpen, setAccountSheetOpen]       = useState(false)
+  const [activeCardId, setActiveCardId]               = useState(null)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')
@@ -38,8 +40,9 @@ export default function App() {
 
   const {
     budgets, syncing, importConflict, resolveImport,
-    createBudget, deleteBudget, addTransaction, updateTransaction,
+    createBudget, deleteBudget, updateBudget, addTransaction, updateTransaction,
     deleteTransaction, addBudgetItem, updateBudgetItem, deleteBudgetItem,
+    addCard, updateCard, deleteCard, addCardPayment, deleteCardPayment,
   } = useBudgets(user)
 
   const activeBudget = budgets.find(b => b.id === activeBudgetId) ?? null
@@ -129,6 +132,22 @@ export default function App() {
           onOpenCategory={handleOpenCategory}
           onAddTransaction={() => openAddTxn(null)}
           onOpenDetail={() => setScreen('detail')}
+          onOpenCardDetail={cardId => { setActiveCardId(cardId); setScreen('cardDetail') }}
+          onAddCard={card => addCard(activeBudgetId, card)}
+          onUpdateCard={(cardId, updates) => updateCard(activeBudgetId, cardId, updates)}
+          onDeleteCard={cardId => deleteCard(activeBudgetId, cardId)}
+        />
+      )}
+
+      {screen === 'cardDetail' && activeBudget && activeCardId && (
+        <CardDetail
+          budget={activeBudget}
+          cardId={activeCardId}
+          onBack={() => setScreen('overview')}
+          onAddPayment={payment => addCardPayment(activeBudgetId, payment)}
+          onDeletePayment={paymentId => deleteCardPayment(activeBudgetId, paymentId)}
+          onUpdateCard={updates => updateCard(activeBudgetId, activeCardId, updates)}
+          onDeleteCard={() => { deleteCard(activeBudgetId, activeCardId); setScreen('overview') }}
         />
       )}
 
@@ -136,6 +155,7 @@ export default function App() {
         <BudgetDetail
           budget={activeBudget}
           onBack={() => setScreen('overview')}
+          onUpdateBudget={(budgetId, updates) => updateBudget(budgetId, updates)}
           onUpdateTransaction={(txnId, updates) => updateTransaction(activeBudgetId, txnId, updates)}
           onDeleteTransaction={(txnId) => deleteTransaction(activeBudgetId, txnId)}
         />

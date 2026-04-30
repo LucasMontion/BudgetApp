@@ -2734,3 +2734,540 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .account-sign-out-btn:active { opacity: .75; }
+
+/* ══════════════════════════════════════
+   Credit Cards — CardsPanel (overview)
+══════════════════════════════════════ */
+
+.cards-panel {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow);
+}
+
+.cards-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cards-panel__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+
+.cards-panel__title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-secondary);
+}
+
+.cards-panel__add-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--neutral-100);
+  border: none;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cards-panel__add-btn:active { background: var(--neutral-200); }
+
+.cards-panel__empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+.cards-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Card summary row ── */
+.card-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--neutral-50);
+  border-radius: var(--radius-sm);
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.card-summary-row:active { background: var(--neutral-100); }
+
+.card-summary-row__indicator {
+  width: 4px;
+  height: 36px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.card-summary-row__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.card-summary-row__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.card-summary-row__track {
+  width: 100%;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--neutral-200);
+  overflow: hidden;
+}
+
+.card-summary-row__fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width .4s ease;
+}
+
+.card-summary-row__meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.card-summary-row__chevron {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ── Manage card sheet ── */
+.manage-card-sheet {
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.manage-card-sheet__handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 0 auto;
+}
+
+.manage-card-sheet__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.manage-card-sheet__row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+/* ── Card color picker ── */
+.card-color-picker {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.card-color-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform .15s, border-color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-color-swatch--active {
+  border-color: var(--text);
+  transform: scale(1.15);
+}
+
+/* ══════════════════════════════════════
+   Credit Cards — CardDetail screen
+══════════════════════════════════════ */
+
+.card-header-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.card-detail-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 20px calc(40px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Section wrapper ── */
+.card-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-section__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--text-secondary);
+  padding: 0 2px;
+}
+
+/* ── Current cycle card ── */
+.card-cycle-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--card-color, #6366F1);
+}
+
+.card-cycle-card__top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.card-cycle-card__amount {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: var(--text);
+}
+
+.card-cycle-card__limit {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.card-cycle-card__pct {
+  font-size: 14px;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.card-cycle-card__track {
+  width: 100%;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--neutral-100);
+  overflow: hidden;
+}
+
+.card-cycle-card__fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+  min-width: 4px;
+}
+
+.card-cycle-card__dates {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ── Statement card ── */
+.card-statement-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow);
+}
+
+.card-statement-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-statement-card__key {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.card-statement-card__key--owed {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.card-statement-card__val {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.card-statement-card__val--paid {
+  color: #22C55E;
+}
+
+.card-statement-card__val--owed {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.card-statement-card__val--overdue {
+  color: #F43F5E;
+}
+
+.card-statement-card__divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+.card-statement-card__due {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding-top: 2px;
+}
+
+.card-due--overdue {
+  color: #F43F5E;
+  font-weight: 600;
+}
+
+.card-due--clear {
+  color: #22C55E;
+}
+
+/* ── Add payment button ── */
+.card-add-payment-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--card-color, #6366F1);
+  background: transparent;
+  color: var(--card-color, #6366F1);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font: inherit;
+  transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.card-add-payment-btn:active { background: rgba(0,0,0,.04); }
+
+/* ── Transaction list ── */
+.card-txn-list {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0 16px;
+}
+
+.card-txn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.card-txn-row:last-child { border-bottom: none; }
+
+.card-txn-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.card-txn-row__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.card-txn-row__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.card-txn-row__date {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.card-txn-row__amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.card-txn-row__amount--payment {
+  color: #22C55E;
+}
+
+.card-txn-row__del {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--neutral-100);
+  border: none;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s, color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.card-txn-row__del:active { background: #FEE2E2; color: #EF4444; }
+
+/* ── Empty / delete ── */
+.card-empty-note {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 8px 0;
+}
+
+.card-delete-btn {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 14px;
+  color: #F43F5E;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 4px 0;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Chip dot for card chips in AddTransaction ── */
+.atxn-chip__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── StepCards (wizard step 4) ── */
+.step-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.step-card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--neutral-50);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.step-card-row__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.step-card-row__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.step-card-row__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.step-card-row__meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.step-card-row__del {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-card-row__del:hover {
+  background: var(--neutral-100);
+  color: var(--text-primary);
+}
+
+.step-card-form {
+  background: var(--neutral-50);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.step-card-form__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}

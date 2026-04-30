@@ -23,8 +23,11 @@ export function AddTransaction({ budget, initialSectionKey, initialSubcategory, 
 
   const todayStr = new Date().toISOString().slice(0, 10)
 
+  const cards = (budget.trackCards ?? false) ? (budget.cards || []) : []
+
   const [catKey, setCatKey] = useState(defaultKey)
   const [selectedSub, setSelectedSub] = useState(initialSubcategory ?? null)
+  const [selectedCardId, setSelectedCardId] = useState(null)
   const [digits, setDigits] = useState('')
   const [memo, setMemo] = useState('')
   const [useCustomDate, setUseCustomDate] = useState(false)
@@ -89,7 +92,7 @@ export function AddTransaction({ budget, initialSectionKey, initialSubcategory, 
     const date = useCustomDate
       ? new Date(customDate + 'T12:00:00').toISOString()
       : new Date().toISOString()
-    onSave({ sectionKey: catKey, subcategoryName: selectedSub, amount, memo: memo.trim(), date })
+    onSave({ sectionKey: catKey, subcategoryName: selectedSub, amount, memo: memo.trim(), date, cardId: selectedCardId })
   }
 
   function fmtCustomDate(str) {
@@ -210,6 +213,25 @@ export function AddTransaction({ budget, initialSectionKey, initialSubcategory, 
             ))}
           </div>
         </div>
+        {cards.length > 0 && (
+          <div className="add-txn__section">
+            <p className="add-txn__section-label">Charged to card (optional)</p>
+            <div className="add-txn__chips">
+              {cards.map(card => (
+                <button
+                  key={card.id}
+                  className={`atxn-chip${selectedCardId === card.id ? ' atxn-chip--active' : ''}`}
+                  style={{ '--chip-color': card.color }}
+                  onClick={() => setSelectedCardId(id => id === card.id ? null : card.id)}
+                >
+                  <span className="atxn-chip__dot" style={{ background: card.color, opacity: selectedCardId === card.id ? 0 : 1 }} />
+                  {card.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="add-txn__action">
           <button
             className="add-txn__btn"

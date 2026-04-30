@@ -472,7 +472,7 @@ function EditSheet({ txn, budget, onSave, onDelete, onClose }) {
   )
 }
 
-export function BudgetDetail({ budget, onBack, onUpdateTransaction, onDeleteTransaction }) {
+export function BudgetDetail({ budget, onBack, onUpdateBudget, onUpdateTransaction, onDeleteTransaction }) {
   const [editingTxn, setEditingTxn] = useState(null)
   const [periodOffset, setPeriodOffset] = useState(0)
 
@@ -589,6 +589,19 @@ export function BudgetDetail({ budget, onBack, onUpdateTransaction, onDeleteTran
               <div className="bdetail__row">
                 <span className="bdetail__key">Recurrence</span>
                 <span className="bdetail__val">{recurrenceLabel}</span>
+              </div>
+            )}
+            {!isProject && (
+              <div className="bdetail__row" style={{ alignItems: 'center' }}>
+                <span className="bdetail__key">Credit card tracker</span>
+                <button
+                  className={`toggle${budget.trackCards ? ' toggle--on' : ''}`}
+                  style={{ '--toggle-color': '#6366F1' }}
+                  onClick={() => onUpdateBudget(budget.id, { trackCards: !budget.trackCards })}
+                  aria-pressed={!!budget.trackCards}
+                >
+                  <div className="toggle__thumb" />
+                </button>
               </div>
             )}
           </div>

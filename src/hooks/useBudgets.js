@@ -99,7 +99,7 @@ export function useBudgets(user) {
     setImportConflict(null)
   }
 
-  function createBudget({ type, name, themeId, sections, recurrent, recurrence, recurrenceDays, recurrenceStart }) {
+  function createBudget({ type, name, themeId, sections, recurrent, recurrence, recurrenceDays, recurrenceStart, trackCards, cards }) {
     if (budgets.length >= BUDGET_LIMIT) return null
     const budget = {
       id: createId(),
@@ -111,6 +111,8 @@ export function useBudgets(user) {
       recurrence: recurrence ?? null,
       recurrenceDays: recurrenceDays ?? null,
       recurrenceStart: recurrenceStart ?? null,
+      trackCards: trackCards ?? false,
+      cards: cards ?? [],
       createdAt: new Date().toISOString(),
     }
     setBudgets(prev => [budget, ...prev])
@@ -119,6 +121,10 @@ export function useBudgets(user) {
 
   function deleteBudget(id) {
     setBudgets(prev => prev.filter(b => b.id !== id))
+  }
+
+  function updateBudget(id, updates) {
+    setBudgets(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b))
   }
 
   function updateTransaction(budgetId, txnId, updates) {
@@ -141,7 +147,7 @@ export function useBudgets(user) {
     ))
   }
 
-  function addTransaction(budgetId, { sectionKey, subcategoryName, amount, memo, date }) {
+  function addTransaction(budgetId, { sectionKey, subcategoryName, amount, memo, date, cardId }) {
     const txn = {
       id: createId(),
       sectionKey,
@@ -149,6 +155,7 @@ export function useBudgets(user) {
       amount,
       memo,
       date: date || new Date().toISOString(),
+      cardId: cardId || null,
     }
     setBudgets(prev => prev.map(b =>
       b.id === budgetId
@@ -199,6 +206,48 @@ export function useBudgets(user) {
     }))
   }
 
+  function addCard(budgetId, { name, limit, cycleStartDay, color }) {
+    const card = { id: createId(), name, limit: parseFloat(limit) || 0, cycleStartDay: parseInt(cycleStartDay), color }
+    setBudgets(prev => prev.map(b =>
+      b.id !== budgetId ? b : { ...b, cards: [...(b.cards || []), card] }
+    ))
+  }
+
+  function updateCard(budgetId, cardId, updates) {
+    setBudgets(prev => prev.map(b =>
+      b.id !== budgetId ? b : {
+        ...b,
+        cards: (b.cards || []).map(c => c.id === cardId ? { ...c, ...updates } : c),
+      }
+    ))
+  }
+
+  function deleteCard(budgetId, cardId) {
+    setBudgets(prev => prev.map(b =>
+      b.id !== budgetId ? b : {
+        ...b,
+        cards: (b.cards || []).filter(c => c.id !== cardId),
+        cardPayments: (b.cardPayments || []).filter(p => p.cardId !== cardId),
+      }
+    ))
+  }
+
+  function addCardPayment(budgetId, { cardId, amount, date, memo }) {
+    const payment = { id: createId(), cardId, amount: parseFloat(amount), date: date || new Date().toISOString(), memo: memo || '' }
+    setBudgets(prev => prev.map(b =>
+      b.id !== budgetId ? b : { ...b, cardPayments: [...(b.cardPayments || []), payment] }
+    ))
+  }
+
+  function deleteCardPayment(budgetId, paymentId) {
+    setBudgets(prev => prev.map(b =>
+      b.id !== budgetId ? b : {
+        ...b,
+        cardPayments: (b.cardPayments || []).filter(p => p.id !== paymentId),
+      }
+    ))
+  }
+
   function deleteBudgetItem(budgetId, sectionKey, itemId) {
     setBudgets(prev => prev.map(b => {
       if (b.id !== budgetId) return b
@@ -223,11 +272,17 @@ export function useBudgets(user) {
     resolveImport,
     createBudget,
     deleteBudget,
+    updateBudget,
     addTransaction,
     updateTransaction,
     deleteTransaction,
     addBudgetItem,
     updateBudgetItem,
     deleteBudgetItem,
+    addCard,
+    updateCard,
+    deleteCard,
+    addCardPayment,
+    deleteCardPayment,
   }
 }

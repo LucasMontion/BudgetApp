@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getTheme } from '../themes'
+import { CardsPanel } from './CardsList'
 
 function sumItems(items = []) {
   return items.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0)
@@ -117,7 +118,7 @@ export function getPeriodLabel(recurrence, offset, opts = {}) {
 }
 
 // ── Component ────────────────────────────────────────────────────────
-export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransaction, onOpenDetail }) {
+export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransaction, onOpenDetail, onOpenCardDetail, onAddCard, onUpdateCard, onDeleteCard }) {
   const [expensesOpen, setExpensesOpen] = useState(false)
   const [periodOffset, setPeriodOffset] = useState(0)
 
@@ -263,6 +264,16 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
             actual={savingsActual}
             total={savingsTotal}
             onTap={() => onOpenCategory('savings', 'Savings')}
+          />
+        )}
+
+        {!isProject && (budget.trackCards ?? false) && (
+          <CardsPanel
+            budget={budget}
+            onOpenCard={onOpenCardDetail}
+            onAddCard={onAddCard}
+            onUpdateCard={onUpdateCard}
+            onDeleteCard={onDeleteCard}
           />
         )}
       </div>

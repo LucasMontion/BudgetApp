@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { THEMES } from '../themes'
+import { CARD_COLORS } from './CardsList'
 
 function createId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
@@ -24,12 +25,16 @@ export function CreateBudget({ onCreate, onCancel }) {
   // Step 3
   const [includeIncome, setIncludeIncome] = useState(false)
   const [includeSavings, setIncludeSavings] = useState(false)
+  const [trackCards, setTrackCards] = useState(false)
   const [recurrent, setRecurrent] = useState(false)
   const [recurrence, setRecurrence] = useState('monthly')
   const [customDays, setCustomDays] = useState(30)
   const [customStart, setCustomStart] = useState(() => new Date().toISOString().slice(0, 10))
 
-  // Step 4
+  // Step 4 (cards — only when trackCards)
+  const [initCards, setInitCards] = useState([])
+
+  // Step 4 or 5 (items)
   const [items, setItems] = useState({
     income:   [newItem()],
     bills:    [newItem()],
@@ -38,6 +43,12 @@ export function CreateBudget({ onCreate, onCancel }) {
   })
 
   const theme = THEMES.find(t => t.id === themeId)
+  const isProject = budgetType === 'project'
+  const hasCardsStep = !isProject && trackCards
+  const stepLabels = hasCardsStep
+    ? ['Type', 'Details', 'Sections', 'Cards', 'Items']
+    : ['Type', 'Details', 'Sections', 'Items']
+  const itemsStep = hasCardsStep ? 5 : 4
 
   function addItem(section) {
     setItems(prev => ({ ...prev, [section]: [...prev[section], newItem()] }))
@@ -71,6 +82,8 @@ export function CreateBudget({ onCreate, onCancel }) {
       setStep(3)
     } else if (step === 3) {
       setStep(4)
+    } else if (step === 4 && hasCardsStep) {
+      setStep(5)
     }
   }
 
@@ -86,6 +99,8 @@ export function CreateBudget({ onCreate, onCancel }) {
       recurrence: budgetType === 'daily' && recurrent ? recurrence : null,
       recurrenceDays: budgetType === 'daily' && recurrent && recurrence === 'custom' ? Math.max(1, customDays) : null,
       recurrenceStart: budgetType === 'daily' && recurrent && recurrence === 'custom' ? customStart : null,
+      trackCards: !isProject && trackCards,
+      cards: !isProject && trackCards ? initCards : [],
       sections: {
         income:   { enabled: includeIncome,                    items: includeIncome  ? filterItems(items.income)   : [] },
         bills:    { enabled: !isProject,                       items: !isProject     ? filterItems(items.bills)    : [] },
@@ -94,8 +109,6 @@ export function CreateBudget({ onCreate, onCancel }) {
       },
     })
   }
-
-  const isProject = budgetType === 'project'
 
   return (
     <div className="screen">
@@ -109,7 +122,7 @@ export function CreateBudget({ onCreate, onCancel }) {
         <div style={{ width: 40 }} />
       </header>
 
-      <StepBar current={step} total={4} labels={['Type', 'Details', 'Sections', 'Items']} />
+      <StepBar current={step} total={stepLabels.length} labels={stepLabels} />
 
       <div className="wizard-body">
         {step === 1 && <StepType onSelect={handleSelectType} />}
@@ -126,6 +139,7 @@ export function CreateBudget({ onCreate, onCancel }) {
             isProject={isProject}
             includeIncome={includeIncome} setIncludeIncome={setIncludeIncome}
             includeSavings={includeSavings} setIncludeSavings={setIncludeSavings}
+            trackCards={trackCards} setTrackCards={setTrackCards}
             recurrent={recurrent} setRecurrent={setRecurrent}
             recurrence={recurrence} setRecurrence={setRecurrence}
             customDays={customDays} setCustomDays={setCustomDays}
@@ -133,7 +147,14 @@ export function CreateBudget({ onCreate, onCancel }) {
             onNext={handleNext}
           />
         )}
-        {step === 4 && (
+        {step === 4 && hasCardsStep && (
+          <StepCards
+            cards={initCards}
+            setCards={setInitCards}
+            onNext={handleNext}
+          />
+        )}
+        {step === itemsStep && (
           <StepItems
             isProject={isProject}
             includeIncome={includeIncome} includeSavings={includeSavings}
@@ -290,7 +311,7 @@ const RECURRENCE_OPTIONS = [
 ]
 
 // ── Step 3: Sections ────────────────────────────────────────────────
-function StepSections({ isProject, includeIncome, setIncludeIncome, includeSavings, setIncludeSavings, recurrent, setRecurrent, recurrence, setRecurrence, customDays, setCustomDays, customStart, setCustomStart, onNext }) {
+function StepSections({ isProject, includeIncome, setIncludeIncome, includeSavings, setIncludeSavings, trackCards, setTrackCards, recurrent, setRecurrent, recurrence, setRecurrence, customDays, setCustomDays, customStart, setCustomStart, onNext }) {
   return (
     <div className="step-content">
       <div className="step-intro">
@@ -393,6 +414,15 @@ function StepSections({ isProject, includeIncome, setIncludeIncome, includeSavin
                 </div>
               )}
             </div>
+
+            <SectionToggleCard
+              icon={<CreditCardIcon />}
+              color="#6366F1"
+              title="Credit card tracker"
+              description="Track card cycles, statement balances, and payments."
+              checked={trackCards}
+              onChange={setTrackCards}
+            />
           </>
         )}
       </div>
@@ -566,6 +596,139 @@ function ItemSection({ label, sublabel, accent, items, onAdd, onRemove, onUpdate
   )
 }
 
+// ── Step 4: Cards ────────────────────────────────────────────────────
+function StepCards({ cards, setCards, onNext }) {
+  const [formOpen, setFormOpen] = useState(true)
+  const [name, setName]               = useState('')
+  const [limit, setLimit]             = useState('')
+  const [cycleDay, setCycleDay]       = useState(1)
+  const [color, setColor]             = useState(CARD_COLORS[0].hex)
+  const [error, setError]             = useState(null)
+
+  function addCard() {
+    if (!name.trim()) { setError('Card name is required'); return }
+    setCards(prev => [...prev, {
+      id: createId(),
+      name: name.trim(),
+      limit: parseFloat(limit) || 0,
+      cycleStartDay: Math.min(28, Math.max(1, parseInt(cycleDay) || 1)),
+      color,
+    }])
+    setName(''); setLimit(''); setCycleDay(1); setColor(CARD_COLORS[0].hex)
+    setError(null)
+    setFormOpen(false)
+  }
+
+  function removeCard(id) {
+    setCards(prev => prev.filter(c => c.id !== id))
+  }
+
+  return (
+    <div className="step-content">
+      <div className="step-intro">
+        <h2 className="step-heading">Add your cards</h2>
+        <p className="step-sub">Set up the credit cards you want to track. You can add more later.</p>
+      </div>
+
+      {cards.length > 0 && (
+        <div className="step-cards-list">
+          {cards.map(card => (
+            <div key={card.id} className="step-card-row">
+              <div className="step-card-row__dot" style={{ background: card.color }} />
+              <div className="step-card-row__info">
+                <span className="step-card-row__name">{card.name}</span>
+                <span className="step-card-row__meta">
+                  {card.limit > 0 ? `$${card.limit.toLocaleString()} · ` : ''}
+                  Cycle day {card.cycleStartDay} · Due in {card.dueDays}d
+                </span>
+              </div>
+              <button className="step-card-row__del" onClick={() => removeCard(card.id)} aria-label="Remove card">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!formOpen ? (
+        <button className="add-item-btn" onClick={() => setFormOpen(true)} style={{ '--accent': '#6366F1' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add another card
+        </button>
+      ) : (
+        <div className="step-card-form">
+          <div className="field">
+            <label className="field-label">Card name</label>
+            <input
+              className={`field-input${error ? ' field-input--error' : ''}`}
+              placeholder="e.g. Visa Gold"
+              value={name}
+              onChange={e => { setName(e.target.value); setError(null) }}
+              autoFocus
+            />
+            {error && <p className="field-error">{error}</p>}
+          </div>
+
+          <div className="field">
+            <label className="field-label">Credit limit (optional)</label>
+            <div className="catdetail__amount-wrap" style={{ width: '100%' }}>
+              <span className="catdetail__currency">$</span>
+              <input
+                className="catdetail__input catdetail__input--amount"
+                type="text" inputMode="decimal"
+                placeholder="5,000"
+                value={limit}
+                onChange={e => setLimit(e.target.value.replace(/[^0-9.]/g, ''))}
+              />
+            </div>
+          </div>
+
+          <div className="field">
+            <label className="field-label">Billing cycle start day</label>
+            <input className="field-input" type="number" min="1" max="28" value={cycleDay} onChange={e => setCycleDay(e.target.value)} />
+          </div>
+
+          <div className="field">
+            <label className="field-label">Color</label>
+            <div className="card-color-picker">
+              {CARD_COLORS.map(c => (
+                <button
+                  key={c.id}
+                  className={`card-color-swatch${color === c.hex ? ' card-color-swatch--active' : ''}`}
+                  style={{ background: c.hex }}
+                  onClick={() => setColor(c.hex)}
+                  aria-label={c.id}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="step-card-form__actions">
+            {cards.length > 0 && (
+              <button className="confirm-sheet__cancel" onClick={() => setFormOpen(false)}>Cancel</button>
+            )}
+            <button
+              className="confirm-sheet__delete"
+              style={{ background: color, flex: 1 }}
+              onClick={addCard}
+            >
+              Add Card
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button className="btn-primary" style={{ marginTop: 8 }} onClick={onNext}>
+        {cards.length === 0 ? 'Skip for now' : 'Continue'}
+      </button>
+    </div>
+  )
+}
+
 // ── Icons ────────────────────────────────────────────────────────────
 function DailyLifeIcon() {
   return (
@@ -614,6 +777,15 @@ function SavingsIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.8 1.7-1.8 2-3h1v-4h-1c0-.7-.1-1.4-.2-2H19z" />
       <path d="M2 9V7c0-1.1.9-2 2-2h3" /><circle cx="16" cy="11" r="1" />
+    </svg>
+  )
+}
+
+function CreditCardIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+      <line x1="1" y1="10" x2="23" y2="10" />
     </svg>
   )
 }
