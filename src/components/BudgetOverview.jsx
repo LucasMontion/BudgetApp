@@ -118,16 +118,14 @@ export function getPeriodLabel(recurrence, offset, opts = {}) {
 }
 
 // ── Component ────────────────────────────────────────────────────────
-export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransaction, onOpenDetail, onOpenCalendar, onOpenCardDetail, onAddCard, onUpdateCard, onDeleteCard }) {
+export function BudgetOverview({ budget, periodOffset, onPeriodChange, onBack, onOpenCategory, onAddTransaction, onOpenDetail, onOpenCalendar, onOpenCardDetail, onAddCard, onUpdateCard, onDeleteCard }) {
   const [expensesOpen, setExpensesOpen] = useState(false)
-  const [periodOffset, setPeriodOffset] = useState(0)
 
   const sections     = budget.sections || {}
   const allTxns      = budget.transactions || []
   const isProject    = budget.type === 'project'
   const isRecurrent  = budget.recurrent && budget.recurrence && !isProject
 
-  // Filter transactions to the selected period when recurrent
   const periodOpts = { customDays: budget.recurrenceDays, createdAt: budget.recurrenceStart || budget.createdAt }
 
   const transactions = isRecurrent
@@ -193,7 +191,7 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
         <div className="period-nav">
           <button
             className="period-nav__arrow"
-            onClick={() => setPeriodOffset(o => o - 1)}
+            onClick={() => onPeriodChange(o => o - 1)}
             aria-label="Previous period"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -203,7 +201,7 @@ export function BudgetOverview({ budget, onBack, onOpenCategory, onAddTransactio
           <span className="period-nav__label">{getPeriodLabel(budget.recurrence, periodOffset, periodOpts)}</span>
           <button
             className="period-nav__arrow"
-            onClick={() => setPeriodOffset(o => o + 1)}
+            onClick={() => onPeriodChange(o => o + 1)}
             aria-label="Next period"
             disabled={periodOffset >= 0}
           >

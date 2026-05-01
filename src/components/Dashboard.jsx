@@ -3,7 +3,8 @@ import { getTheme } from '../themes'
 
 export function Dashboard({ budgets, onCreateNew, onDeleteBudget, onOpenBudget, darkMode, onToggleDark, user, syncing, onAccountPress }) {
   const [pendingDelete, setPendingDelete] = useState(null)
-  const atLimit = budgets.length >= 5
+  const limit = user ? 5 : 3
+  const atLimit = budgets.length >= limit
 
   function handleConfirmDelete() {
     onDeleteBudget(pendingDelete.id)
@@ -15,7 +16,7 @@ export function Dashboard({ budgets, onCreateNew, onDeleteBudget, onOpenBudget, 
       <header className="dashboard-header">
         <div>
           <h1 className="dashboard-title">My Budgets</h1>
-          {atLimit && <p className="dashboard-limit-note">5 / 5 — limit reached</p>}
+          {atLimit && <p className="dashboard-limit-note">{limit} / {limit} — limit reached</p>}
         </div>
         <div className="dashboard-header__actions">
           {syncing && <span className="sync-dot" title="Syncing…" />}

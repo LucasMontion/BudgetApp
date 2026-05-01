@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Dashboard } from './components/Dashboard'
 import { CreateBudget } from './components/CreateBudget'
-import { BudgetOverview } from './components/BudgetOverview'
+import { BudgetOverview, getPeriodBounds } from './components/BudgetOverview'
 import { CategoryDetail } from './components/CategoryDetail'
 import { AddTransaction } from './components/AddTransaction'
 import { TransactionList } from './components/TransactionList'
@@ -26,6 +26,10 @@ export default function App() {
   const [darkMode, setDarkMode]                       = useState(() => localStorage.getItem('theme') === 'dark')
   const [accountSheetOpen, setAccountSheetOpen]       = useState(false)
   const [activeCardId, setActiveCardId]               = useState(null)
+  const [periodOffset, setPeriodOffset]               = useState(0)
+
+  // Reset period when switching budgets
+  useEffect(() => { setPeriodOffset(0) }, [activeBudgetId])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')
@@ -47,6 +51,17 @@ export default function App() {
   } = useBudgets(user)
 
   const activeBudget = budgets.find(b => b.id === activeBudgetId) ?? null
+
+  // Transactions filtered to the active period (for recurrent budgets)
+  const periodTransactions = (() => {
+    if (!activeBudget) return []
+    const allTxns = activeBudget.transactions || []
+    const isRecurrent = activeBudget.recurrent && activeBudget.recurrence && activeBudget.type !== 'project'
+    if (!isRecurrent) return allTxns
+    const opts = { customDays: activeBudget.recurrenceDays, createdAt: activeBudget.recurrenceStart || activeBudget.createdAt }
+    const { start, end } = getPeriodBounds(activeBudget.recurrence, periodOffset, opts)
+    return allTxns.filter(t => { const d = new Date(t.date); return d >= start && d <= end })
+  })()
 
   function handleCreate(budgetData) {
     if (createBudget(budgetData) === null) return
@@ -122,13 +137,15 @@ export default function App() {
         <CreateBudget
           onCreate={handleCreate}
           onCancel={() => setScreen('dashboard')}
-          atLimit={budgets.length >= 5}
+          atLimit={budgets.length >= (user ? 5 : 3)}
         />
       )}
 
       {screen === 'overview' && activeBudget && (
         <BudgetOverview
           budget={activeBudget}
+          periodOffset={periodOffset}
+          onPeriodChange={setPeriodOffset}
           onUpdateBudget={(updates) => updateBudget(activeBudgetId, updates)}
           onBack={() => setScreen('dashboard')}
           onOpenCategory={handleOpenCategory}
@@ -174,6 +191,7 @@ export default function App() {
       {screen === 'category' && activeBudget && activeSection && (
         <CategoryDetail
           budget={activeBudget}
+          transactions={periodTransactions}
           sectionKey={activeSection.key}
           sectionLabel={activeSection.label}
           onBack={() => setScreen('overview')}
@@ -189,6 +207,7 @@ export default function App() {
       {screen === 'subcategory' && activeBudget && activeSection && activeSubcategory && (
         <TransactionList
           budget={activeBudget}
+          transactions={periodTransactions}
           sectionKey={activeSection.key}
           sectionLabel={activeSection.label}
           subcategoryName={activeSubcategory}
@@ -237,21 +256,25 @@ function ImportConflictModal({ conflict, onResolve }) {
             <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
         </div>
-        <h2 className="confirm-sheet__title">Import local data?</h2>
+        <h2 className="confirm-sheet__title">You have local budgets</h2>
         <p className="confirm-sheet__body">
           You have <strong>{localCount} budget{localCount !== 1 ? 's' : ''}</strong> on this device
-          and <strong>{cloudCount}</strong> in your cloud account. Which would you like to keep?
+          and <strong>{cloudCount} budget{cloudCount !== 1 ? 's' : ''}</strong> in your cloud account.
+          What would you like to do?
         </p>
-        <div className="confirm-sheet__actions">
-          <button className="confirm-sheet__cancel" onClick={() => onResolve(false)}>
-            Keep cloud
-          </button>
+        <div className="confirm-sheet__actions" style={{ flexDirection: 'column', gap: 8 }}>
           <button
             className="confirm-sheet__delete"
             style={{ background: '#6366F1' }}
-            onClick={() => onResolve(true)}
+            onClick={() => onResolve('merge')}
           >
-            Use local
+            Add local to cloud ({localCount + cloudCount} total)
+          </button>
+          <button className="confirm-sheet__cancel" onClick={() => onResolve('cloud')}>
+            Keep cloud only
+          </button>
+          <button className="confirm-sheet__cancel" onClick={() => onResolve('local')}>
+            Use local only
           </button>
         </div>
       </div>

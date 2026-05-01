@@ -148,10 +148,10 @@ function EditSheet({ txn, budget, sectionKey, color, onSave, onDelete, onClose }
   )
 }
 
-export function TransactionList({ budget, sectionKey, sectionLabel, subcategoryName, onBack, onAddTransaction, onUpdateTransaction, onDeleteTransaction }) {
+export function TransactionList({ budget, transactions: txnsProp, sectionKey, sectionLabel, subcategoryName, onBack, onAddTransaction, onUpdateTransaction, onDeleteTransaction }) {
   const [editingTxn, setEditingTxn] = useState(null)
 
-  const transactions = (budget.transactions || [])
+  const transactions = (txnsProp ?? budget.transactions ?? [])
     .filter(t => t.sectionKey === sectionKey && (!subcategoryName || t.subcategoryName === subcategoryName))
     .sort((a, b) => new Date(b.date) - new Date(a.date))
 

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 const STORAGE_KEY = 'budgets_v1'
-const BUDGET_LIMIT = 5
+const GUEST_BUDGET_LIMIT = 3
+const AUTH_BUDGET_LIMIT = 5
 
 function createId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
@@ -92,15 +93,25 @@ export function useBudgets(user) {
     }
   }, [budgets, ready, user?.id])
 
-  function resolveImport(useLocal) {
+  function resolveImport(choice) {
     if (!importConflict) return
-    setBudgets(useLocal ? importConflict.localBudgets : importConflict.cloudBudgets)
+    if (choice === 'merge') {
+      const cloudIds = new Set(importConflict.cloudBudgets.map(b => b.id))
+      const merged = [
+        ...importConflict.cloudBudgets,
+        ...importConflict.localBudgets.filter(b => !cloudIds.has(b.id)),
+      ]
+      setBudgets(merged)
+    } else {
+      setBudgets(choice === 'local' ? importConflict.localBudgets : importConflict.cloudBudgets)
+    }
     localStorage.removeItem(STORAGE_KEY)
     setImportConflict(null)
   }
 
   function createBudget({ type, name, themeId, sections, recurrent, recurrence, recurrenceDays, recurrenceStart, trackCards, cards }) {
-    if (budgets.length >= BUDGET_LIMIT) return null
+    const limit = user ? AUTH_BUDGET_LIMIT : GUEST_BUDGET_LIMIT
+    if (budgets.length >= limit) return null
     const budget = {
       id: createId(),
       type: type ?? 'daily',

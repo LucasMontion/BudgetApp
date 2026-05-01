@@ -135,7 +135,7 @@ function EditItemSheet({ item, color, sectionKey, onSave, onDelete, onClose }) {
   )
 }
 
-export function CategoryDetail({ budget, sectionKey, sectionLabel, onBack, onUpdateBudget, onAddTransaction, onAddItem, onUpdateItem, onDeleteItem, onOpenSubcategory }) {
+export function CategoryDetail({ budget, transactions: txnsProp, sectionKey, sectionLabel, onBack, onUpdateBudget, onAddTransaction, onAddItem, onUpdateItem, onDeleteItem, onOpenSubcategory }) {
   const [showForm, setShowForm]   = useState(false)
   const [newName, setNewName]     = useState('')
   const [newAmount, setNewAmount] = useState('')
@@ -146,7 +146,7 @@ export function CategoryDetail({ budget, sectionKey, sectionLabel, onBack, onUpd
   const color    = sections[sectionKey]?.color ?? SECTION_COLORS[sectionKey] ?? '#6366f1'
   const isIncome = sectionKey === 'income'
   const rawItems = sections[sectionKey]?.items || []
-  const transactions = budget.transactions || []
+  const transactions = txnsProp ?? budget.transactions ?? []
 
   const items = rawItems.map(item => {
     const expected = parseFloat(item.amount) || 0
