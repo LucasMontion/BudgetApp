@@ -237,12 +237,14 @@ export function BudgetOverview({ budget, periodOffset, onPeriodChange, onBack, o
             dashColor={`${secColors.variable}80`}
             actual={variableActual}
             total={variableTotal}
+            showAlert
             onTap={() => onOpenCategory('variable', 'Expenses')}
           />
         ) : (
           <CategoryPanel
             label="Expenses"
             color={budget.sections?.expenses?.color || "#F43F5E"}
+            showAlert
             dashColor={budget.sections?.expenses?.color ? `${budget.sections.expenses.color}80` : "rgba(244,63,94,.5)"}
             actual={expensesActual}
             total={expensesTotal}
@@ -304,9 +306,12 @@ export function BudgetOverview({ budget, periodOffset, onPeriodChange, onBack, o
   )
 }
 
-function CategoryPanel({ label, color, dashColor, actual, total, onTap, expandable, expanded, onColorChange, children }) {
+function CategoryPanel({ label, color, dashColor, actual, total, onTap, expandable, expanded, onColorChange, showAlert, children }) {
   const pctDisplay = total > 0 ? Math.round((actual / total) * 100) : 0
   const pctFill = Math.min(100, pctDisplay)
+  const fillBg = showAlert && pctDisplay >= 100 ? 'rgba(239,68,68,.85)'
+    : showAlert && pctDisplay >= 80 ? 'rgba(245,158,11,.85)'
+    : undefined
 
   return (
     <div
@@ -334,7 +339,7 @@ function CategoryPanel({ label, color, dashColor, actual, total, onTap, expandab
         <span className="cat-panel__amount">${fmtMoney(actual)}</span>
         {total > 0 && (
           <div className="cat-panel__track">
-            <div className="cat-panel__fill" style={{ width: pctFill > 0 ? `${pctFill}%` : '3px' }} />
+            <div className="cat-panel__fill" style={{ width: pctFill > 0 ? `${pctFill}%` : '3px', ...(fillBg && { background: fillBg }) }} />
           </div>
         )}
         <div className="cat-panel__bottom">
@@ -363,6 +368,9 @@ function CategoryPanel({ label, color, dashColor, actual, total, onTap, expandab
 function SubCard({ label, sublabel, color, actual, total, onTap }) {
   const pctDisplay = total > 0 ? Math.round((actual / total) * 100) : 0
   const pctFill = Math.min(100, pctDisplay)
+  const fillBg = pctDisplay >= 100 ? 'rgba(239,68,68,.85)'
+    : pctDisplay >= 80 ? 'rgba(245,158,11,.85)'
+    : undefined
 
   return (
     <button
@@ -377,7 +385,7 @@ function SubCard({ label, sublabel, color, actual, total, onTap }) {
       <span className="sub-card__amount">${fmtMoney(actual)}</span>
       {total > 0 && (
         <div className="sub-card__track">
-          <div className="sub-card__fill" style={{ width: pctFill > 0 ? `${pctFill}%` : '3px' }} />
+          <div className="sub-card__fill" style={{ width: pctFill > 0 ? `${pctFill}%` : '3px', ...(fillBg && { background: fillBg }) }} />
         </div>
       )}
       {total > 0 && <span className="sub-card__pct">{pctDisplay}%</span>}

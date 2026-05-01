@@ -1362,6 +1362,73 @@ body {
    Transaction list
 ══════════════════════════════════════ */
 
+.txn-search-bar {
+  padding: 8px 20px 0;
+}
+
+.txn-search-bar__wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.txn-search-bar__icon {
+  position: absolute;
+  left: 11px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.txn-search-bar__input {
+  width: 100%;
+  height: 40px;
+  background: var(--neutral-100);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0 36px 0 36px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+}
+
+.txn-search-bar__input::placeholder { color: var(--text-secondary); }
+
+.txn-search-bar__clear {
+  position: absolute;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--neutral-200);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.txn-filter-row {
+  display: flex;
+  gap: 6px;
+  padding: 10px 20px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.txn-filter-row::-webkit-scrollbar { display: none; }
+
+.txn-filter-divider {
+  width: 1px;
+  min-width: 1px;
+  background: var(--border);
+  align-self: stretch;
+  margin: 2px 2px;
+}
+
 .txn-list {
   flex: 1;
   padding: 16px 20px;

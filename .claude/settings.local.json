@@ -6,7 +6,8 @@
       "Bash(awk '{print $NF}')",
       "Bash(npm install *)",
       "Bash(node --input-type=module)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(npm run *)"
     ]
   }
 }
