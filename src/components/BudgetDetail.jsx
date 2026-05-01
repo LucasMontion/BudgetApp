@@ -69,6 +69,18 @@ function getSectionColor(budget, key) {
   return budget?.sections?.[key]?.color ?? SECTION_COLORS[key] ?? '#6366F1'
 }
 
+function shortPeriodLabel(recurrence, offset, opts) {
+  const bounds = getPeriodBounds(recurrence, offset, opts)
+  if (!bounds) return ''
+  const { start } = bounds
+  switch (recurrence) {
+    case 'monthly':   return start.toLocaleDateString('en-US', { month: 'short' })
+    case 'quarterly': return `Q${Math.floor(start.getMonth() / 3) + 1}`
+    case 'yearly':    return String(start.getFullYear())
+    default:          return start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+}
+
 function CategoryBreakdownTabs({ budget, sectionRows, sections, transactions, incomeTotal, incomeActual }) {
   const scrollRef = useRef(null)
   const [activeTab, setActiveTab] = useState(sectionRows[0]?.key)
@@ -192,6 +204,125 @@ function CategoryBreakdownTabs({ budget, sectionRows, sections, transactions, in
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+function CategoryEvolutionChart({ budget, sectionRows, periodOffset }) {
+  const [hoverIdx, setHoverIdx] = useState(null)
+  const svgRef = useRef(null)
+
+  const isProject   = budget.type === 'project'
+  const isRecurrent = budget.recurrent && budget.recurrence && !isProject
+  if (!isRecurrent || sectionRows.length === 0) return null
+
+  const periodOpts = { customDays: budget.recurrenceDays, createdAt: budget.recurrenceStart || budget.createdAt }
+  const allTxns    = budget.transactions || []
+  const now        = new Date()
+
+  const N = 6
+  const periods = []
+  for (let i = -(N - 1); i <= 0; i++) {
+    const offset = periodOffset + i
+    const bounds = getPeriodBounds(budget.recurrence, offset, periodOpts)
+    if (!bounds || bounds.start > now) continue
+    const txns = allTxns.filter(t => { const d = new Date(t.date); return d >= bounds.start && d <= bounds.end })
+    const actuals = {}
+    for (const row of sectionRows) {
+      actuals[row.key] = txns
+        .filter(t => t.sectionKey === row.key)
+        .reduce((s, t) => s + (parseFloat(t.amount) || 0), 0)
+    }
+    periods.push({ offset, actuals })
+  }
+
+  if (periods.length < 2) return null
+
+  const W = 100, chartH = 44
+
+  const maxVal = Math.max(
+    ...sectionRows.flatMap(r => periods.map(p => p.actuals[r.key] || 0)),
+    1
+  )
+
+  const xFor = i => periods.length === 1 ? 50 : (i / (periods.length - 1)) * W
+  const yFor = v => chartH - (v / (maxVal * 1.1)) * chartH
+
+  const handleMove = e => {
+    if (!svgRef.current) return
+    const rect  = svgRef.current.getBoundingClientRect()
+    const cx    = e.touches ? e.touches[0].clientX : e.clientX
+    const ratio = Math.max(0, Math.min(1, (cx - rect.left) / rect.width))
+    setHoverIdx(Math.round(ratio * (periods.length - 1)))
+  }
+
+  return (
+    <div className="bdetail__group">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+        <p className="bdetail__group-label" style={{ margin: 0 }}>Category Evolution</p>
+        {hoverIdx !== null && (
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {sectionRows.map(r => (
+              <span key={r.key} style={{ fontSize: '0.72rem', color: getSectionColor(budget, r.key), fontWeight: 600 }}>
+                ${fmtMoney(periods[hoverIdx].actuals[r.key] || 0)}
+                <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: '0.65rem', marginLeft: 2 }}>{r.label}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bdetail__card bdetail__line-card" style={{ position: 'relative' }}>
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${W} ${chartH}`}
+          preserveAspectRatio="none"
+          className="bdetail__line-svg"
+          onMouseMove={handleMove}
+          onTouchMove={handleMove}
+          onMouseLeave={() => setHoverIdx(null)}
+          onTouchEnd={() => setHoverIdx(null)}
+          style={{ touchAction: 'pan-y' }}
+        >
+          {sectionRows.map(r => {
+            const color  = getSectionColor(budget, r.key)
+            const points = periods.map((p, i) =>
+              `${xFor(i).toFixed(1)},${yFor(p.actuals[r.key] || 0).toFixed(1)}`
+            ).join(' ')
+            return (
+              <g key={r.key}>
+                <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                {periods.map((p, i) => (
+                  <circle key={i} cx={xFor(i).toFixed(1)} cy={yFor(p.actuals[r.key] || 0).toFixed(1)}
+                    r="1.8" fill="var(--card)" stroke={color} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                ))}
+              </g>
+            )
+          })}
+          {hoverIdx !== null && (
+            <line
+              x1={xFor(hoverIdx).toFixed(1)} y1={0}
+              x2={xFor(hoverIdx).toFixed(1)} y2={chartH}
+              stroke="var(--text-secondary)" strokeWidth="0.5" strokeDasharray="2" vectorEffect="non-scaling-stroke"
+            />
+          )}
+        </svg>
+
+        <div className="bdetail__line-labels" style={{ justifyContent: 'space-between' }}>
+          {periods.map((p, i) => (
+            <span key={i}>{shortPeriodLabel(budget.recurrence, p.offset, periodOpts)}</span>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8, paddingLeft: 4 }}>
+        {sectionRows.map(r => (
+          <span key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            <span style={{ width: 14, height: 2, background: getSectionColor(budget, r.key), borderRadius: 1, display: 'inline-block', flexShrink: 0 }} />
+            {r.label}
+          </span>
+        ))}
       </div>
     </div>
   )
@@ -564,6 +695,22 @@ export function BudgetDetail({ budget, onBack, onUpdateBudget, onUpdateTransacti
     sections.savings?.enabled && { key: 'savings', label: 'Savings',            total: sumItems(sections.savings?.items), actual: getActual('savings') },
   ].filter(Boolean)
 
+  // Previous period actuals for deltas
+  const prevPeriodActuals = {}
+  if (isRecurrent) {
+    const prevBounds = getPeriodBounds(budget.recurrence, periodOffset - 1, periodOpts)
+    if (prevBounds) {
+      const prevTxns = (budget.transactions || []).filter(t => {
+        const d = new Date(t.date); return d >= prevBounds.start && d <= prevBounds.end
+      })
+      for (const row of sectionRows) {
+        prevPeriodActuals[row.key] = prevTxns
+          .filter(t => t.sectionKey === row.key)
+          .reduce((s, t) => s + (parseFloat(t.amount) || 0), 0)
+      }
+    }
+  }
+
   const incomeTotal = sectionRows.find(r => r.key === 'income')?.total || 0
   const expensesTotal = sectionRows.filter(r => r.key !== 'income').reduce((s, r) => s + r.total, 0)
   const extraTotal = incomeTotal - expensesTotal
@@ -671,18 +818,32 @@ export function BudgetDetail({ budget, onBack, onUpdateBudget, onUpdateTransacti
                 <span style={{ width: '70px' }}>Actual</span>
               </div>
             </div>
-            {sectionRows.map(({ key, label, total, actual }) => (
-              <div key={key} className="bdetail__row" style={{ paddingTop: '12px' }}>
-                <span className="bdetail__key" style={{ flex: 1 }}>
-                  <span className="bdetail__dot" style={{ background: getSectionColor(budget, key) }} />
-                  {label}
-                </span>
-                <div style={{ display: 'flex', gap: '16px', textAlign: 'right' }}>
-                  <span className="bdetail__val" style={{ width: '70px', color: '#9CA3AF', fontWeight: 'normal' }}>${fmtMoney(total)}</span>
-                  <span className="bdetail__val" style={{ width: '70px' }}>${fmtMoney(actual)}</span>
+            {sectionRows.map(({ key, label, total, actual }) => {
+              const prevAct = isRecurrent && key in prevPeriodActuals ? prevPeriodActuals[key] : null
+              const delta   = prevAct !== null ? actual - prevAct : null
+              const isIncome = key === 'income'
+              const deltaGood = delta !== null && (isIncome ? delta >= 0 : delta <= 0)
+              const deltaColor = delta === null || delta === 0 ? 'var(--text-secondary)' : deltaGood ? '#10B981' : '#F43F5E'
+              return (
+                <div key={key} className="bdetail__row" style={{ paddingTop: '12px' }}>
+                  <span className="bdetail__key" style={{ flex: 1 }}>
+                    <span className="bdetail__dot" style={{ background: getSectionColor(budget, key) }} />
+                    {label}
+                  </span>
+                  <div style={{ display: 'flex', gap: '16px', textAlign: 'right' }}>
+                    <span className="bdetail__val" style={{ width: '70px', color: '#9CA3AF', fontWeight: 'normal' }}>${fmtMoney(total)}</span>
+                    <span className="bdetail__val" style={{ width: '70px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                      ${fmtMoney(actual)}
+                      {delta !== null && delta !== 0 && (
+                        <span style={{ fontSize: '0.65rem', color: deltaColor, lineHeight: 1 }}>
+                          {delta > 0 ? '↑' : '↓'}${fmtMoney(Math.abs(delta))}
+                        </span>
+                      )}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
             {sections.income?.enabled && (
               <div className="bdetail__row" style={{ borderTop: '2px solid var(--border)', paddingTop: '12px', marginTop: '4px' }}>
                 <span className="bdetail__key" style={{ fontWeight: 600, color: 'var(--text)', flex: 1 }}>
@@ -702,6 +863,9 @@ export function BudgetDetail({ budget, onBack, onUpdateBudget, onUpdateTransacti
           </div>
         </div>
         
+        {/* Category Evolution */}
+        <CategoryEvolutionChart budget={budget} sectionRows={sectionRows} periodOffset={periodOffset} />
+
         {/* Spending Trend */}
         <SpendingTrendSlider budget={budget} periodOffset={periodOffset} />
 
