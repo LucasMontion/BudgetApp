@@ -4,6 +4,7 @@ import { CreateBudget } from './components/CreateBudget'
 import { BudgetOverview, getPeriodBounds } from './components/BudgetOverview'
 import { CategoryDetail } from './components/CategoryDetail'
 import { AddTransaction } from './components/AddTransaction'
+import { ImportStatement } from './components/ImportStatement'
 import { TransactionList } from './components/TransactionList'
 import { BudgetDetail } from './components/BudgetDetail'
 import { AuthScreen } from './components/AuthScreen'
@@ -27,6 +28,7 @@ export default function App() {
   const [accountSheetOpen, setAccountSheetOpen]       = useState(false)
   const [activeCardId, setActiveCardId]               = useState(null)
   const [periodOffset, setPeriodOffset]               = useState(0)
+  const [importStmtOpen, setImportStmtOpen]           = useState(false)
 
   // Reset period when switching budgets
   useEffect(() => { setPeriodOffset(0) }, [activeBudgetId])
@@ -53,13 +55,23 @@ export default function App() {
   const activeBudget = budgets.find(b => b.id === activeBudgetId) ?? null
 
   // Transactions filtered to the active period (for recurrent budgets)
+  const activePeriodBounds = (() => {
+    if (!activeBudget) return null
+    if (activeBudget.type === 'project') return null
+    const isRecurrent = activeBudget.recurrent && activeBudget.recurrence
+    if (isRecurrent) {
+      const opts = { customDays: activeBudget.recurrenceDays, createdAt: activeBudget.recurrenceStart || activeBudget.createdAt }
+      return getPeriodBounds(activeBudget.recurrence, periodOffset, opts)
+    }
+    // Non-recurrent daily-life budgets default to calendar month filtering
+    return getPeriodBounds('monthly', periodOffset, {})
+  })()
+
   const periodTransactions = (() => {
     if (!activeBudget) return []
     const allTxns = activeBudget.transactions || []
-    const isRecurrent = activeBudget.recurrent && activeBudget.recurrence && activeBudget.type !== 'project'
-    if (!isRecurrent) return allTxns
-    const opts = { customDays: activeBudget.recurrenceDays, createdAt: activeBudget.recurrenceStart || activeBudget.createdAt }
-    const { start, end } = getPeriodBounds(activeBudget.recurrence, periodOffset, opts)
+    if (!activePeriodBounds) return allTxns
+    const { start, end } = activePeriodBounds
     return allTxns.filter(t => { const d = new Date(t.date); return d >= start && d <= end })
   })()
 
@@ -104,6 +116,14 @@ export default function App() {
     } else {
       setScreen('auth')
     }
+  }
+
+  function handleImportStatement(transactions, cardPayments) {
+    if (activeBudgetId) {
+      transactions.forEach(t => addTransaction(activeBudgetId, t))
+      cardPayments.forEach(p => addCardPayment(activeBudgetId, p))
+    }
+    setImportStmtOpen(false)
   }
 
   async function handleSignOut() {
@@ -156,6 +176,7 @@ export default function App() {
           onAddCard={card => addCard(activeBudgetId, card)}
           onUpdateCard={(cardId, updates) => updateCard(activeBudgetId, cardId, updates)}
           onDeleteCard={cardId => deleteCard(activeBudgetId, cardId)}
+          onImportStatement={() => setImportStmtOpen(true)}
         />
       )}
 
@@ -215,6 +236,15 @@ export default function App() {
           onAddTransaction={() => openAddTxn(activeSection.key, activeSubcategory)}
           onUpdateTransaction={(txnId, updates) => updateTransaction(activeBudgetId, txnId, updates)}
           onDeleteTransaction={(txnId) => deleteTransaction(activeBudgetId, txnId)}
+        />
+      )}
+
+      {importStmtOpen && activeBudget && (
+        <ImportStatement
+          budget={activeBudget}
+          periodBounds={activePeriodBounds}
+          onClose={() => setImportStmtOpen(false)}
+          onImport={handleImportStatement}
         />
       )}
 

@@ -118,7 +118,7 @@ export function getPeriodLabel(recurrence, offset, opts = {}) {
 }
 
 // ── Component ────────────────────────────────────────────────────────
-export function BudgetOverview({ budget, periodOffset, onPeriodChange, onBack, onOpenCategory, onAddTransaction, onOpenDetail, onOpenCalendar, onOpenCardDetail, onAddCard, onUpdateCard, onDeleteCard }) {
+export function BudgetOverview({ budget, periodOffset, onPeriodChange, onBack, onOpenCategory, onAddTransaction, onOpenDetail, onOpenCalendar, onOpenCardDetail, onAddCard, onUpdateCard, onDeleteCard, onImportStatement }) {
   const [expensesOpen, setExpensesOpen] = useState(false)
 
   const sections     = budget.sections || {}
@@ -128,11 +128,12 @@ export function BudgetOverview({ budget, periodOffset, onPeriodChange, onBack, o
 
   const periodOpts = { customDays: budget.recurrenceDays, createdAt: budget.recurrenceStart || budget.createdAt }
 
-  const transactions = isRecurrent
-    ? (() => {
-        const { start, end } = getPeriodBounds(budget.recurrence, periodOffset, periodOpts)
-        return allTxns.filter(t => { const d = new Date(t.date); return d >= start && d <= end })
-      })()
+  const activePeriodBounds = isProject ? null : isRecurrent
+    ? getPeriodBounds(budget.recurrence, periodOffset, periodOpts)
+    : getPeriodBounds('monthly', periodOffset, {})
+
+  const transactions = activePeriodBounds
+    ? allTxns.filter(t => { const d = new Date(t.date); return d >= activePeriodBounds.start && d <= activePeriodBounds.end })
     : allTxns
 
   const incomeTotal    = sumItems(sections.income?.items)
@@ -172,6 +173,13 @@ export function BudgetOverview({ budget, periodOffset, onPeriodChange, onBack, o
           </span>
         </div>
         <div style={{ display: 'flex', gap: 2 }}>
+          <button className="ov-back-btn" onClick={onImportStatement} aria-label="Import statement">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+          </button>
           <button className="ov-back-btn" onClick={onOpenCalendar} aria-label="Calendar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -187,7 +195,7 @@ export function BudgetOverview({ budget, periodOffset, onPeriodChange, onBack, o
         </div>
       </header>
 
-      {isRecurrent && (
+      {!isProject && (
         <div className="period-nav">
           <button
             className="period-nav__arrow"
@@ -198,7 +206,7 @@ export function BudgetOverview({ budget, periodOffset, onPeriodChange, onBack, o
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <span className="period-nav__label">{getPeriodLabel(budget.recurrence, periodOffset, periodOpts)}</span>
+          <span className="period-nav__label">{isRecurrent ? getPeriodLabel(budget.recurrence, periodOffset, periodOpts) : getPeriodLabel('monthly', periodOffset, {})}</span>
           <button
             className="period-nav__arrow"
             onClick={() => onPeriodChange(o => o + 1)}

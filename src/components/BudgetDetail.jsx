@@ -658,7 +658,12 @@ function EditSheet({ txn, budget, onSave, onDelete, onClose }) {
   )
 }
 
-export function BudgetDetail({ budget, onBack, onUpdateBudget, onUpdateTransaction, onDeleteTransaction }) {
+export function BudgetDetail({ budget: rawBudget, onBack, onUpdateBudget, onUpdateTransaction, onDeleteTransaction }) {
+  const budget = {
+    ...rawBudget,
+    recurrence: rawBudget.recurrence || 'monthly',
+    recurrent: rawBudget.type !== 'project' ? true : rawBudget.recurrent
+  }
   const [editingTxn, setEditingTxn] = useState(null)
   const [periodOffset, setPeriodOffset] = useState(0)
   const [generatingPdf, setGeneratingPdf] = useState(false)
