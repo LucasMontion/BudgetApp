@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
 import { getPeriodBounds, getPeriodLabel } from './BudgetOverview'
+import { exportTransactionsCsv } from '../utils/exportCsv'
+import { exportBudgetPdf } from '../utils/exportPdf'
 
 const SECTION_COLORS = {
   income:   '#10B981',
@@ -659,6 +661,17 @@ function EditSheet({ txn, budget, onSave, onDelete, onClose }) {
 export function BudgetDetail({ budget, onBack, onUpdateBudget, onUpdateTransaction, onDeleteTransaction }) {
   const [editingTxn, setEditingTxn] = useState(null)
   const [periodOffset, setPeriodOffset] = useState(0)
+  const [generatingPdf, setGeneratingPdf] = useState(false)
+
+  async function handleExportPdf() {
+    setGeneratingPdf(true)
+    try {
+      const label = getPeriodLabel(budget.recurrence, periodOffset, periodOpts)
+      await exportBudgetPdf(budget, currentPeriodTxns, label, periodOffset, periodOpts)
+    } finally {
+      setGeneratingPdf(false)
+    }
+  }
 
   const transactions = [...(budget.transactions || [])]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -877,7 +890,62 @@ export function BudgetDetail({ budget, onBack, onUpdateBudget, onUpdateTransacti
           transactions={currentPeriodTxns}
           incomeTotal={incomeTotal}
           incomeActual={incomeActual}
-        />          
+        />
+
+        <div className="bdetail__group" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button
+            onClick={handleExportPdf}
+            disabled={generatingPdf}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '13px',
+              border: 'none',
+              borderRadius: 12,
+              background: '#6366F1',
+              color: '#fff',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              cursor: generatingPdf ? 'default' : 'pointer',
+              opacity: generatingPdf ? 0.7 : 1,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+            </svg>
+            {generatingPdf ? 'Generating PDF…' : 'Export full report as PDF'}
+          </button>
+          <button
+            onClick={() => exportTransactionsCsv(currentPeriodTxns, budget, getPeriodLabel(budget.recurrence, periodOffset, periodOpts))}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '13px',
+              border: '1.5px solid var(--border)',
+              borderRadius: 12,
+              background: 'transparent',
+              color: 'var(--text)',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export transactions as CSV
+          </button>
+        </div>
       </div>
 
       {editingTxn && (
