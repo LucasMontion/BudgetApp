@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const STORAGE_KEY = 'budgets_v1'
@@ -38,6 +38,7 @@ export function useBudgets(user) {
   const [syncing, setSyncing] = useState(false)
   const [ready, setReady] = useState(false)
   const [importConflict, setImportConflict] = useState(null)
+  const allowEmptyCloudSaveRef = useRef(false)
 
   useEffect(() => {
     setReady(false)
@@ -87,7 +88,9 @@ export function useBudgets(user) {
   useEffect(() => {
     if (!ready) return
     if (user) {
+      if (budgets.length === 0 && !allowEmptyCloudSaveRef.current) return
       cloudSave(user.id, budgets)
+      allowEmptyCloudSaveRef.current = false
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
     }
@@ -131,7 +134,13 @@ export function useBudgets(user) {
   }
 
   function deleteBudget(id) {
-    setBudgets(prev => prev.filter(b => b.id !== id))
+    setBudgets(prev => {
+      const next = prev.filter(b => b.id !== id)
+      if (prev.length > 0 && next.length === 0) {
+        allowEmptyCloudSaveRef.current = true
+      }
+      return next
+    })
   }
 
   function updateBudget(id, updates) {
