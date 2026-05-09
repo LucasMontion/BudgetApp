@@ -27,10 +27,16 @@ async function cloudLoad(userId) {
 }
 
 function cloudSave(userId, budgets) {
-  supabase
+  return supabase
     .from('user_budgets')
     .upsert({ user_id: userId, data: budgets, updated_at: new Date().toISOString() })
-    .then()
+    .then(({ error }) => {
+      if (error) {
+        console.error('Failed to sync budgets to cloud', error)
+        return false
+      }
+      return true
+    })
 }
 
 export function useBudgets(user) {
@@ -88,9 +94,16 @@ export function useBudgets(user) {
   useEffect(() => {
     if (!ready) return
     if (user) {
-      if (budgets.length === 0 && !allowEmptyCloudSaveRef.current) return
-      cloudSave(user.id, budgets)
+      // Prevent accidental cloud wipe; only permit empty save after explicit delete-last-budget.
+      if (budgets.length === 0) {
+        if (!allowEmptyCloudSaveRef.current) return
+        cloudSave(user.id, budgets).then(saved => {
+          if (saved) allowEmptyCloudSaveRef.current = false
+        })
+        return
+      }
       allowEmptyCloudSaveRef.current = false
+      cloudSave(user.id, budgets).then()
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
     }
@@ -136,7 +149,7 @@ export function useBudgets(user) {
   function deleteBudget(id) {
     setBudgets(prev => {
       const next = prev.filter(b => b.id !== id)
-      if (prev.length > 0 && next.length === 0) {
+      if (next.length === 0) {
         allowEmptyCloudSaveRef.current = true
       }
       return next
