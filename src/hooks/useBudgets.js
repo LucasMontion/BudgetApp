@@ -13,7 +13,9 @@ function createId() {
 function localLoad() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? JSON.parse(stored) : []
+    if (!stored) return []
+    const parsed = JSON.parse(stored)
+    return Array.isArray(parsed) ? parsed : []
   } catch { return [] }
 }
 
@@ -23,10 +25,15 @@ async function cloudLoad(userId) {
     .select('data')
     .eq('user_id', userId)
     .maybeSingle()
-  return data?.data ?? []
+  const cloudData = data?.data
+  return Array.isArray(cloudData) ? cloudData : []
 }
 
 function cloudSave(userId, budgets) {
+  if (!Array.isArray(budgets)) {
+    console.error('Failed to sync budgets to cloud: invalid payload shape')
+    return Promise.resolve(false)
+  }
   return supabase
     .from('user_budgets')
     .upsert({ user_id: userId, data: budgets, updated_at: new Date().toISOString() })
