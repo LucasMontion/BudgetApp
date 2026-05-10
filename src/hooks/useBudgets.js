@@ -110,7 +110,7 @@ export function useBudgets(user) {
         return
       }
       allowEmptyCloudSaveRef.current = false
-      cloudSave(user.id, budgets).then()
+      void cloudSave(user.id, budgets)
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
     }
