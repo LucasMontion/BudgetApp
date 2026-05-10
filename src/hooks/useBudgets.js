@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const STORAGE_KEY = 'budgets_v1'
@@ -13,7 +13,9 @@ function createId() {
 function localLoad() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? JSON.parse(stored) : []
+    if (!stored) return []
+    const parsed = JSON.parse(stored)
+    return Array.isArray(parsed) ? parsed : []
   } catch { return [] }
 }
 
@@ -23,14 +25,25 @@ async function cloudLoad(userId) {
     .select('data')
     .eq('user_id', userId)
     .maybeSingle()
-  return data?.data ?? []
+  const cloudData = data?.data
+  return Array.isArray(cloudData) ? cloudData : []
 }
 
 function cloudSave(userId, budgets) {
-  supabase
+  if (!Array.isArray(budgets)) {
+    console.error('Failed to sync budgets to cloud: invalid payload shape')
+    return Promise.resolve(false)
+  }
+  return supabase
     .from('user_budgets')
     .upsert({ user_id: userId, data: budgets, updated_at: new Date().toISOString() })
-    .then()
+    .then(({ error }) => {
+      if (error) {
+        console.error('Failed to sync budgets to cloud', error)
+        return false
+      }
+      return true
+    })
 }
 
 export function useBudgets(user) {
@@ -38,6 +51,7 @@ export function useBudgets(user) {
   const [syncing, setSyncing] = useState(false)
   const [ready, setReady] = useState(false)
   const [importConflict, setImportConflict] = useState(null)
+  const allowEmptyCloudSaveRef = useRef(false)
 
   useEffect(() => {
     setReady(false)
@@ -87,7 +101,20 @@ export function useBudgets(user) {
   useEffect(() => {
     if (!ready) return
     if (user) {
-      cloudSave(user.id, budgets)
+      // Prevent accidental cloud wipe; only permit empty save after explicit delete-last-budget.
+      if (budgets.length === 0) {
+        if (!allowEmptyCloudSaveRef.current) return
+        cloudSave(user.id, budgets).then(saved => {
+          if (saved) allowEmptyCloudSaveRef.current = false
+        })
+        return
+      }
+      allowEmptyCloudSaveRef.current = false
+      cloudSave(user.id, budgets).then(saved => {
+        if (!saved) {
+          console.error('Cloud budget sync did not persist latest changes')
+        }
+      })
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
     }
@@ -131,7 +158,13 @@ export function useBudgets(user) {
   }
 
   function deleteBudget(id) {
-    setBudgets(prev => prev.filter(b => b.id !== id))
+    setBudgets(prev => {
+      const next = prev.filter(b => b.id !== id)
+      if (next.length === 0) {
+        allowEmptyCloudSaveRef.current = true
+      }
+      return next
+    })
   }
 
   function updateBudget(id, updates) {
