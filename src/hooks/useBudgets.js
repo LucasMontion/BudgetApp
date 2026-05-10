@@ -110,7 +110,11 @@ export function useBudgets(user) {
         return
       }
       allowEmptyCloudSaveRef.current = false
-      void cloudSave(user.id, budgets)
+      cloudSave(user.id, budgets).then(saved => {
+        if (!saved) {
+          console.error('Cloud budget sync did not persist latest changes')
+        }
+      })
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
     }
