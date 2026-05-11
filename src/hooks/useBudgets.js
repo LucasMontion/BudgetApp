@@ -37,15 +37,18 @@ export function useBudgets(user) {
   const [budgets, setBudgets] = useState([])
   const [syncing, setSyncing] = useState(false)
   const [ready, setReady] = useState(false)
+  const [loadComplete, setLoadComplete] = useState(false)
   const [importConflict, setImportConflict] = useState(null)
 
   useEffect(() => {
     setReady(false)
+    setLoadComplete(false)
     setImportConflict(null)
 
     if (!user) {
       setBudgets(localLoad())
       setReady(true)
+      setLoadComplete(true)
       return
     }
 
@@ -58,11 +61,9 @@ export function useBudgets(user) {
         const localBudgets = localLoad()
 
         if (localBudgets.length > 0 && cloudBudgets.length > 0) {
-          // Both exist — let user choose
           setImportConflict({ localBudgets, cloudBudgets })
           setBudgets(cloudBudgets)
         } else if (localBudgets.length > 0) {
-          // Auto-import guest data into new cloud account
           setBudgets(localBudgets)
           localStorage.removeItem(STORAGE_KEY)
         } else {
@@ -71,27 +72,26 @@ export function useBudgets(user) {
       })
       .catch(() => {
         if (cancelled) return
-        // Supabase unreachable — fall back to local cache
         setBudgets(localLoad())
       })
       .finally(() => {
         if (cancelled) return
         setSyncing(false)
         setReady(true)
+        setLoadComplete(true)
       })
 
     return () => { cancelled = true }
   }, [user?.id])
 
-  // Persist whenever budgets change (gated on ready so initial load doesn't double-write)
   useEffect(() => {
-    if (!ready) return
+    if (!loadComplete) return
     if (user) {
       cloudSave(user.id, budgets)
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(budgets))
     }
-  }, [budgets, ready, user?.id])
+  }, [budgets, loadComplete, user?.id])
 
   function resolveImport(choice) {
     if (!importConflict) return
@@ -297,3 +297,4 @@ export function useBudgets(user) {
     deleteCardPayment,
   }
 }
+
